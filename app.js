@@ -625,11 +625,41 @@ function restoreState(data) {
   }
 }
 
+function restoreMissingTemplateCards(data) {
+  const savedCards = data.cards ?? data.cardLibrary;
+  if (!Array.isArray(savedCards)) return data;
+  const retiredId = "aa57d72c-2328-49a3-b192-9ada60671e59";
+  const cards = savedCards.filter(card => card.id !== retiredId);
+  const present = new Set(cards.map(card => card.id));
+  for (const card of makeDefaultCards()) {
+    if (!present.has(card.id)) { cards.push(card); present.add(card.id); }
+  }
+  const cleanScenario = scenario => !scenario ? scenario : {
+    ...scenario,
+    ...(Array.isArray(scenario.carryInCards) ? {
+      carryInCards: scenario.carryInCards.filter(entry => entry.cardId !== retiredId),
+    } : {}),
+  };
+  const routes = data.routes?.map(route => ({ ...route, turns: route.turns?.map(turn => {
+    if (!turn.cardIds?.includes(retiredId)) return turn;
+    const keep = turn.cardIds.map((id, index) => ({ id, index })).filter(entry => entry.id !== retiredId);
+    return { ...turn, cardIds: keep.map(entry => entry.id),
+      configs: keep.map(entry => turn.configs?.[entry.index] ?? null),
+      upgraded: keep.map(entry => Boolean(turn.upgraded?.[entry.index])),
+    };
+  }) }));
+  const routeDefaults = Object.fromEntries(Object.entries(data.routeDefaults ?? {}).filter(([id]) => id !== retiredId));
+  return { ...data, cards, cardLibrary: cards, routes, routeDefaults,
+    scenario: cleanScenario(data.scenario),
+    scenePresets: data.scenePresets?.map(preset => ({ ...preset, scenario: cleanScenario(preset.scenario) })),
+  };
+}
+
 function loadSavedData() {
   const raw = localStorage.getItem(STORAGE_KEY);
   if (!raw) return false;
   try {
-    restoreState(JSON.parse(raw));
+    restoreState(restoreMissingTemplateCards(JSON.parse(raw)));
     setSaveStatus('保存データを復元しました');
     return true;
   } catch (error) {
@@ -834,11 +864,11 @@ function showStep(index) {
 }
 
 function getLibraryCards() {
-  return state.cards.filter(card => card.id !== 'route-drink:macchiato');
+  return state.cards.filter(card => card.id !== 'route-drink:macchiato' && card.id !== 'aa57d72c-2328-49a3-b192-9ada60671e59');
 }
 
 function renderCardLibrary() {
-  if (state.selectedCardId === 'route-drink:macchiato') state.selectedCardId = getLibraryCards()[0]?.id ?? null;
+  if (!getLibraryCards().some(card => card.id === state.selectedCardId)) state.selectedCardId = getLibraryCards()[0]?.id ?? null;
   const list = $('card-library');
   list.textContent = '';
   renderSelectedCardBar();

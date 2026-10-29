@@ -63,9 +63,11 @@
   .buff-duration > span { white-space: normal; font-size: 11px; }
   .buff-input-row .buff-duration input { width: 38px; padding-inline: 2px; }
   .buff-input-row .buff-fresh { grid-column: 1 / -1; justify-self: end; gap: 6px; min-height: 36px; font-size: 13px; }
-  .effect-order-item { grid-template-columns: 20px minmax(0,1fr) 44px 44px; padding: 8px; }
+  .effect-order-item { grid-template-columns: 20px minmax(0,1fr) 36px 36px; padding: 8px; }
   .effect-order-item > .check { grid-column: 2; }
-  .effect-order-item > button { grid-row: 1; }
+  .effect-order-item > button.icon { grid-row: 1; width: 36px; height: 36px; min-width: 36px; min-height: 36px; padding: 0; display: grid; place-items: center; font-size: 16px; line-height: 1; }
+  .effect-order-item > button.icon:nth-last-child(2) { grid-column: 3; }
+  .effect-order-item > button.icon:last-child { grid-column: 4; }
   .effect-order-item > .effect-settings { grid-column: 1 / -1; grid-row: 2; flex-wrap: wrap; }
   .effect-settings { flex-wrap: wrap; }
   .carry-in-item { grid-template-columns: 64px minmax(0,1fr) 44px; }
@@ -91,7 +93,6 @@
   .card-step-name { white-space: normal; overflow-wrap: anywhere; font-size: 14px; }
   .mobile-card-actions { display: flex; grid-column: 2 / -1; gap: 6px; }
   .mobile-card-actions button { width: 44px; flex: none; }
-  .mobile-card-actions select { min-width: 0; flex: 1; }
   #ranking { max-width: 100%; overflow-x: auto; }
   #ranking table { min-width: max-content; }
   .metrics { grid-template-columns: repeat(2,minmax(0,1fr)); }

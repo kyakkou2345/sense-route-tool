@@ -1804,47 +1804,6 @@ const INITIAL_CARD_DEFINITIONS = {
       }
     },
     {
-      "id": "aa57d72c-2328-49a3-b192-9ada60671e59",
-      "name": "集中+1",
-      "kind": "drink",
-      "ljReaction": false,
-      "preEffects": [],
-      "effects": [
-        {
-          "id": "abd14f73-9655-4412-92e9-450f9f32d023",
-          "type": "concentration",
-          "value": 1,
-          "count": 1,
-          "concRate": 1,
-          "goodRate": 1,
-          "upgradeEnabled": false,
-          "upgradeValue": 0,
-          "upgradeCount": 1,
-          "upgradeConcRate": 1,
-          "upgradeGoodRate": 1
-        }
-      ],
-      "reservedEffects": [],
-      "variants": {
-        "plus": [],
-        "customs": [],
-        "enhancements": [
-          {
-            "id": "double",
-            "name": "++",
-            "patches": [],
-            "configured": false
-          },
-          {
-            "id": "triple",
-            "name": "+++",
-            "patches": [],
-            "configured": false
-          }
-        ]
-      }
-    },
-    {
       "id": "route-drink:macchiato",
       "name": "厳選初星マキアート",
       "kind": "drink",

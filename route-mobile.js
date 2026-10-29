@@ -3,11 +3,31 @@
   const activeTurns = new Map();
   const originalRender = renderTurnGrid;
 
+  function capturePosition() {
+    const x = window.scrollX, y = window.scrollY;
+    const elements = [document.getElementById('route-library'), document.querySelector('.mobile-turn-nav')]
+      .filter(Boolean).map(element => ({ element, left: element.scrollLeft, top: element.scrollTop }));
+    return () => {
+      elements.forEach(({element, left, top}) => {
+        const target = element.classList.contains('mobile-turn-nav')
+          ? document.querySelector('.mobile-turn-nav') : element;
+        if (target) { target.scrollLeft = left; target.scrollTop = top; }
+      });
+      window.scrollTo({ left: x, top: y, behavior: 'instant' });
+    };
+  }
+  function keepPosition(action) {
+    if (!narrow.matches) return action();
+    const restore = capturePosition();
+    const result = action();
+    restore(); window.requestAnimationFrame(restore);
+    return result;
+  }
   function moveCard(route, fromTurn, fromIndex, toTurn, boundary) {
     RouteTools.sync();
     if (!RouteDrag.move(route, fromTurn, fromIndex, toTurn, boundary)) return;
     activeTurns.set(route.id, toTurn);
-    recalculateAndSave(true);
+    keepPosition(() => recalculateAndSave(true));
   }
   renderTurnGrid = function(route) {
     originalRender(route);
@@ -41,32 +61,22 @@
         const down = document.createElement('button'); down.type = 'button'; down.textContent = '↓';
         down.setAttribute('aria-label', 'カードを1つ下へ'); down.disabled = cardIndex === turn.cardIds.length - 1;
         down.addEventListener('click', () => moveCard(route, turnIndex, cardIndex, turnIndex, cardIndex + 2));
-        const destination = document.createElement('select'); destination.setAttribute('aria-label', 'カードの移動先ターン');
-        destination.append(option('', '別ターンへ', true));
-        route.turns.forEach((target, index) => {
-          if (index !== turnIndex) destination.append(option(String(index), `残り${route.turns.length - index}T・${ATTRIBUTE_LABELS[target.attribute]}`));
-        });
-        destination.hidden = route.turns.length < 2;
-        destination.addEventListener('change', () => {
-          if (destination.value === '') return;
-          const index = Number(destination.value);
-          if (!Number.isInteger(index) || !route.turns[index] || index === turnIndex) return;
-          moveCard(route, turnIndex, cardIndex, index, route.turns[index].cardIds.length);
-        });
-        actions.append(up, down, destination); row.append(actions);
+        actions.append(up, down); row.append(actions);
       });
     });
     grid.before(nav); selectTurn(active); grid.classList.add('mobile-turns-ready');
   };
   const originalRenderRoutes = renderRoutes;
   renderRoutes = function() {
-    const result = originalRenderRoutes();
-    const grid = document.getElementById('turn-grid');
-    if (!grid.querySelector('.turn-column')) {
-      grid.parentElement.querySelector('.mobile-turn-nav')?.remove();
-      grid.classList.remove('mobile-turns-ready');
-    }
-    return result;
+    return keepPosition(() => {
+      const result = originalRenderRoutes();
+      const grid = document.getElementById('turn-grid');
+      if (!grid.querySelector('.turn-column')) {
+        grid.parentElement.querySelector('.mobile-turn-nav')?.remove();
+        grid.classList.remove('mobile-turns-ready');
+      }
+      return result;
+    });
   };
   narrow.addEventListener('change', () => {
     document.querySelectorAll('#turn-grid .card-step').forEach(row => { row.draggable = !narrow.matches; });
