@@ -1,4 +1,3 @@
-// Fixed distribution snapshot. Browser edits are stored separately.
 const INITIAL_CARD_DEFINITIONS = {
   "version": 8,
   "plan": "sense",
@@ -1215,14 +1214,28 @@ const INITIAL_CARD_DEFINITIONS = {
           {
             "id": "double",
             "name": "++",
-            "patches": [],
-            "configured": false
+            "patches": [
+              {
+                "effectId": "3b53f701-6482-4560-b8e0-91be2239d3c8",
+                "field": "value",
+                "mode": "set",
+                "value": 8
+              }
+            ],
+            "configured": true
           },
           {
             "id": "triple",
             "name": "+++",
-            "patches": [],
-            "configured": false
+            "patches": [
+              {
+                "effectId": "3b53f701-6482-4560-b8e0-91be2239d3c8",
+                "field": "value",
+                "mode": "set",
+                "value": 9
+              }
+            ],
+            "configured": true
           }
         ]
       }
@@ -1515,7 +1528,7 @@ const INITIAL_CARD_DEFINITIONS = {
         {
           "id": "3e21c4bf-9448-4df3-ac75-01ff7713dbeb",
           "type": "score",
-          "value": 40,
+          "value": 30,
           "count": 1,
           "concRate": 1,
           "goodRate": 2,
@@ -1861,4 +1874,320 @@ const INITIAL_CARD_DEFINITIONS = {
       ]
     }
   ]
+};
+
+const INITIAL_TOOL_DEFAULTS = {
+  "scenario": {
+    "previousScore": 340565,
+    "showFinalScore": true,
+    "remainingTurns": 3,
+    "concentration": 87,
+    "good": 4,
+    "paramBoost": 50,
+    "concGainBoost": 0,
+    "goodGainBoost": 0,
+    "concGainBoostTurns": 1,
+    "concGainBoostFresh": false,
+    "goodGainBoostTurns": 1,
+    "goodGainBoostFresh": false,
+    "concScoreBoost": 20,
+    "concScoreBoostTurns": 2,
+    "superGood": true,
+    "multipliers": {
+      "vo": 3834,
+      "da": 4068,
+      "vi": 2786
+    },
+    "memo": "",
+    "negai": {
+      "enabled": false,
+      "concentration": 1
+    },
+    "entertainment": {
+      "enabled": true,
+      "enhanced": true,
+      "score": 4,
+      "concRate": 1,
+      "national": false
+    },
+    "natsuya": {
+      "enabled": true,
+      "remaining": 2,
+      "interval": 5,
+      "score": 4
+    },
+    "lj": {
+      "enabled": true,
+      "score": 14,
+      "concRate": 1.5,
+      "national": false
+    },
+    "ljPitem": {
+      "enabled": true,
+      "activeRemaining": 1,
+      "uses": 1,
+      "concGainBoost": 25
+    },
+    "tenshin": {
+      "enabled": true
+    },
+    "kyakkou": {
+      "enabled": true,
+      "upgradeLevel": 1,
+      "enhanced": true,
+      "national": true,
+      "count": 1
+    },
+    "carryInCards": [],
+    "concScoreBoostRows": [
+      {
+        "percent": 20,
+        "turns": 2,
+        "fresh": false
+      },
+      {
+        "percent": 0,
+        "turns": 3,
+        "fresh": true
+      },
+      {
+        "percent": 0,
+        "turns": 4,
+        "fresh": false
+      }
+    ]
+  },
+  "routes": [
+    {
+      "id": "8bf3d4d7-0760-4568-b3c1-89af56081fd9",
+      "name": "ルート1",
+      "memo": "",
+      "turns": [
+        {
+          "attribute": "da",
+          "cardIds": [
+            "route-card:アドリブ",
+            "route-card:スリリング",
+            "route-card:シュプ",
+            "route-card:存在感",
+            "route-card:アドリブ"
+          ],
+          "upgraded": [
+            false,
+            false,
+            false,
+            false,
+            false
+          ],
+          "configs": [
+            {
+              "base": "plus",
+              "custom": "good2",
+              "enhancement": ""
+            },
+            {
+              "base": "plus",
+              "custom": "",
+              "enhancement": ""
+            },
+            {
+              "base": "plus",
+              "custom": "",
+              "enhancement": "double"
+            },
+            {
+              "base": "plus",
+              "custom": "cost",
+              "enhancement": ""
+            },
+            {
+              "base": "plus",
+              "custom": "good2",
+              "enhancement": "double"
+            }
+          ]
+        },
+        {
+          "attribute": "vi",
+          "cardIds": [
+            "route-card:存在感",
+            "route-card:シュプ",
+            "route-card:アドリブ"
+          ],
+          "upgraded": [
+            false,
+            false,
+            false
+          ],
+          "configs": [
+            {
+              "base": "plus",
+              "custom": "cost",
+              "enhancement": ""
+            },
+            {
+              "base": "plus",
+              "custom": "",
+              "enhancement": ""
+            },
+            {
+              "base": "plus",
+              "custom": "good2",
+              "enhancement": ""
+            }
+          ]
+        },
+        {
+          "attribute": "vo",
+          "cardIds": [
+            "route-card:シュプ",
+            "route-card:存在感",
+            "route-card:アドリブ"
+          ],
+          "upgraded": [
+            false,
+            false,
+            false
+          ],
+          "configs": [
+            {
+              "base": "plus",
+              "custom": "",
+              "enhancement": ""
+            },
+            {
+              "base": "plus",
+              "custom": "cost",
+              "enhancement": ""
+            },
+            {
+              "base": "plus",
+              "custom": "good2",
+              "enhancement": ""
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "externalOrder": [
+    "negai",
+    "entertainment"
+  ],
+  "routeDefaults": {
+    "route-card:アドリブ": {
+      "base": "plus",
+      "custom": "good2"
+    },
+    "route-card:スリリング": {
+      "base": "plus",
+      "custom": ""
+    },
+    "route-card:シュプ": {
+      "base": "plus",
+      "custom": ""
+    },
+    "route-card:存在感": {
+      "base": "plus",
+      "custom": "cost"
+    }
+  },
+  "scenePresets": [
+    {
+      "id": "8faeded3-5c33-4746-a24f-b922fade607e",
+      "name": "実験２",
+      "scenario": {
+        "previousScore": 340565,
+        "showFinalScore": true,
+        "remainingTurns": 3,
+        "concentration": 87,
+        "good": 4,
+        "paramBoost": 50,
+        "concGainBoost": 0,
+        "goodGainBoost": 0,
+        "concGainBoostTurns": 1,
+        "concGainBoostFresh": false,
+        "goodGainBoostTurns": 1,
+        "goodGainBoostFresh": false,
+        "concScoreBoost": 20,
+        "concScoreBoostTurns": 2,
+        "superGood": true,
+        "multipliers": {
+          "vo": 3834,
+          "da": 4068,
+          "vi": 2786
+        },
+        "memo": "",
+        "negai": {
+          "enabled": false,
+          "concentration": 1
+        },
+        "entertainment": {
+          "enabled": true,
+          "enhanced": true,
+          "score": 4,
+          "concRate": 1,
+          "national": false
+        },
+        "natsuya": {
+          "enabled": true,
+          "remaining": 2,
+          "interval": 5,
+          "score": 4
+        },
+        "lj": {
+          "enabled": true,
+          "score": 14,
+          "concRate": 1.5,
+          "national": false
+        },
+        "ljPitem": {
+          "enabled": true,
+          "activeRemaining": 1,
+          "uses": 1,
+          "concGainBoost": 25
+        },
+        "tenshin": {
+          "enabled": true
+        },
+        "kyakkou": {
+          "enabled": true,
+          "upgradeLevel": 1,
+          "enhanced": true,
+          "national": true,
+          "count": 1
+        },
+        "carryInCards": [],
+        "concScoreBoostRows": [
+          {
+            "percent": 20,
+            "turns": 2,
+            "fresh": false
+          },
+          {
+            "percent": 0,
+            "turns": 3,
+            "fresh": true
+          },
+          {
+            "percent": 0,
+            "turns": 4,
+            "fresh": false
+          }
+        ]
+      },
+      "externalOrder": [
+        "negai",
+        "entertainment"
+      ]
+    }
+  ],
+  "ui": {
+    "selectedCardId": "d3e1e7b9-88ac-4462-bc6f-fc41697e09ce",
+    "selectedRouteId": "8bf3d4d7-0760-4568-b3c1-89af56081fd9",
+    "selectedResultRouteId": "8bf3d4d7-0760-4568-b3c1-89af56081fd9",
+    "selectedScenePresetId": "8faeded3-5c33-4746-a24f-b922fade607e",
+    "activeStep": 0,
+    "logDetail": false
+  }
 };

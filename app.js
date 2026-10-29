@@ -150,6 +150,9 @@ function makeRoute(name, remainingTurns = 1) {
 
 function makeDefaultState() {
   const cards = makeDefaultCards();
+  if (typeof INITIAL_TOOL_DEFAULTS !== 'undefined') {
+    return { ...readSavedData({ version: 8, cards, ...structuredClone(INITIAL_TOOL_DEFAULTS) }), cards };
+  }
   const route = makeRoute('ルート1', 1);
   route.turns[0].cardIds = ['存在感', '道筋', '情熱ターン', 'シュプ'].map(name => cards.find(c => c.name === name).id);
   route.turns[0].configs = route.turns[0].cardIds.map((id, i) => ({ ...blankConfig(), enhancement: i === 3 ? 'double' : '' }));
