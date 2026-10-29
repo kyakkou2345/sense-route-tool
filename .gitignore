@@ -1,0 +1,7 @@
+/backups/
+/tests/
+* copy.*
+*コピー*
+*.before-*
+app.before-*
+index.before-*

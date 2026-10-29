@@ -1,0 +1,712 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>センス計算ツール</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #181a19;
+      --chrome: #1d201e;
+      --panel: #232624;
+      --panel-2: #292d2a;
+      --field: #191c1a;
+      --line: #3b413d;
+      --line-strong: #59625c;
+      --text: #f1f0e9;
+      --muted: #b4b7b1;
+      --accent: #82afd0;
+      --accent-soft: #283d4a;
+      --gold: #dab968;
+      --ok: #83b99b;
+      --danger: #d98282;
+      --radius: 6px;
+    }
+
+    * { box-sizing: border-box; }
+    html, body { height: 100%; }
+    body {
+      margin: 0;
+      min-width: 360px;
+      overflow: hidden;
+      background: var(--bg);
+      color: var(--text);
+      font: 15px/1.45 "BIZ UDPGothic", "Yu Gothic UI", Meiryo, system-ui, sans-serif;
+      font-feature-settings: "palt" 1;
+    }
+
+    button, input, select, textarea { font: inherit; }
+    button {
+      border: 1px solid var(--line);
+      border-radius: 5px;
+      padding: 6px 10px;
+      background: #303431;
+      color: var(--text);
+      cursor: pointer;
+    }
+    button:hover:not(:disabled) { border-color: var(--line-strong); background: #3a3f3b; }
+    button:disabled { cursor: default; opacity: .4; }
+    button.primary { border-color: #628ead; background: #31556d; }
+    button.primary:hover:not(:disabled) { border-color: #8eb8d5; background: #3b647f; }
+    button.danger { border-color: #6f4b4b; color: #efaaaa; }
+    button.small { padding: 3px 7px; font-size: 13px; }
+    button.icon { min-width: 30px; padding: 4px 7px; }
+    button.ghost { border-color: transparent; background: transparent; color: var(--muted); }
+
+    input, select, textarea {
+      width: 100%;
+      min-width: 0;
+      border: 1px solid var(--line);
+      border-radius: 5px;
+      background: var(--field);
+      color: var(--text);
+    }
+    input, select { height: 32px; padding: 4px 8px; }
+    input[type="number"] { text-align: right; font-variant-numeric: tabular-nums; }
+    textarea { min-height: 76px; padding: 7px; resize: vertical; }
+    input[type="checkbox"] { width: auto; height: auto; accent-color: var(--accent); }
+    :focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+
+    .app-shell {
+      height: 100dvh;
+      display: grid;
+      grid-template-rows: auto auto minmax(0, 1fr) auto;
+    }
+    .app-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 10px 16px 8px;
+      border-bottom: 1px solid var(--line);
+      background: var(--chrome);
+    }
+    .title-wrap { min-width: 0; }
+    h1 { margin: 0; font-size: clamp(18px, 2vw, 23px); font-weight: 800; letter-spacing: .02em; }
+
+    .stepper {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 5px;
+      padding: 7px 12px;
+      border-bottom: 1px solid var(--line);
+      background: #202321;
+      overflow-x: auto;
+      white-space: nowrap;
+    }
+    .step-button {
+      border: 0;
+      border-bottom: 2px solid transparent;
+      border-radius: 0;
+      padding: 3px 5px;
+      background: transparent;
+      color: var(--muted);
+      font-size: 13px;
+    }
+    .step-button.active {
+      border-bottom-color: var(--accent);
+      color: var(--text);
+      font-weight: 800;
+    }
+    .step-arrow { color: #70766f; }
+
+    .screen-area { min-height: 0; padding: 10px; }
+    .screen {
+      display: none;
+      width: min(1500px, 100%);
+      height: 100%;
+      margin: 0 auto;
+      overflow: hidden;
+    }
+    .screen.active { display: grid; }
+    .screen-grid { min-height: 0; display: grid; gap: 10px; }
+    .screen-grid.cards { display: block; height: 100%; }
+    .screen-grid.scene {
+      grid-template-columns: minmax(270px, .8fr) minmax(340px, 1.2fr);
+      grid-template-rows: auto minmax(0, 1fr);
+    }
+    .screen-grid.routes { grid-template-columns: 230px minmax(0, 1fr); }
+    .screen-grid.results { grid-template-columns: minmax(400px, .9fr) minmax(0, 1.1fr); }
+    .screen-grid.routes > aside { grid-template-rows: auto auto minmax(0, 1fr) auto; }
+    .route-history-toolbar { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 7px; align-self: start; }
+    .route-history-toolbar button { white-space: nowrap; }
+    .route-history-toolbar #routes-clear { grid-column: 1 / -1; }
+
+    .panel {
+      min-width: 0;
+      min-height: 0;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: var(--panel);
+      box-shadow: 0 2px 8px #00000030;
+      padding: 12px;
+    }
+    .scroll { overflow: auto; scrollbar-color: #59615b transparent; }
+    .stack { display: grid; gap: 8px; align-content: start; }
+    .panel-header, .row, .button-row {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+    }
+    .panel-header { justify-content: space-between; margin-bottom: 8px; }
+    .button-row { flex-wrap: wrap; }
+    .row.between { justify-content: space-between; }
+    h2 { margin: 0; font-size: 17px; letter-spacing: .02em; }
+    h3 { margin: 8px 0 5px; color: var(--text); font-size: 14px; }
+    p { margin: 0; }
+    .muted { color: var(--muted); font-size: 12px; }
+    .error { color: var(--danger); }
+    .positive { color: var(--ok); }
+    .score { color: var(--gold); font-weight: 700; }
+    .empty { padding: 22px 10px; text-align: center; color: var(--muted); }
+    .note {
+      border: 1px solid var(--line);
+      border-radius: 5px;
+      padding: 7px 9px;
+      background: var(--field);
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    label { display: grid; gap: 3px; min-width: 0; color: var(--muted); font-size: 12px; }
+    .effect-row label:has(input:disabled) { opacity: .38; }
+    label.check { display: flex; align-items: center; gap: 6px; min-height: 29px; }
+    .fields { display: grid; grid-template-columns: repeat(auto-fit, minmax(125px, 1fr)); gap: 6px; }
+    .fields.compact { grid-template-columns: repeat(3, minmax(90px, 1fr)); }
+
+    .scene-preset-bar {
+      grid-column: 1 / -1;
+      display: grid;
+      grid-template-columns: auto minmax(180px, 1fr) auto auto auto auto;
+      align-items: center;
+      gap: 7px;
+      padding: 8px 10px;
+    }
+
+    .card-subview { display: none; height: 100%; }
+    .card-subview.active { display: grid; }
+    .card-library-view { grid-template-rows: auto minmax(0, 1fr) auto; gap: 10px; }
+    .card-editor-view { grid-template-rows: auto minmax(0, 1fr); gap: 8px; }
+    .library-toolbar { display: grid; grid-template-columns: auto minmax(160px, 1fr) 110px 110px auto; gap: 8px; align-items: center; }
+    .library-toolbar h2 { margin-right: 4px; }
+    .library-list {
+      min-height: 0;
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+      gap: 8px;
+      align-content: flex-start;
+      overflow-y: auto;
+    }
+    .library-item {
+      width: 100%;
+      min-height: 48px;
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      align-items: center;
+      gap: 8px;
+      text-align: left;
+      border-radius: 5px;
+    }
+    .library-item.active { border-color: var(--accent); background: var(--accent-soft); box-shadow: inset 3px 0 0 var(--accent); }
+    .library-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 700; }
+    .kind-badge { border-radius: 3px; padding: 2px 5px; font-size: 11px; font-weight: 700; }
+    .kind-active { background: #513437; color: #efb0b0; }
+    .kind-mental { background: #29453f; color: #a8d8c9; }
+    .kind-drink { background: #50452d; color: #e4c982; }
+    .selected-card-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      min-height: 48px;
+      padding: 7px 9px;
+      border: 1px solid var(--line);
+      border-radius: 5px;
+      background: var(--field);
+    }
+    .selected-card-bar.empty { justify-content: center; }
+    .selected-card-title { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 800; }
+    .card-editor-nav { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+    .card-editor { height: 100%; }
+    .card-editor-content { max-width: 920px; }
+    .card-definition-bar { display: grid; grid-template-columns: auto minmax(220px, 1fr) 150px auto; gap: 8px; align-items: center; }
+    .effect-group { width: min(720px, 100%); border-top: 1px solid var(--line); padding-top: 8px; }
+    details.effect-group { padding-top: 0; }
+    details.effect-group > summary {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      min-height: 38px;
+      cursor: pointer;
+      color: var(--text);
+      font-weight: 700;
+      list-style: none;
+    }
+    details.effect-group > summary::-webkit-details-marker { display: none; }
+    .effect-table-head, .effect-row {
+      display: grid;
+      grid-template-columns: 170px 78px 58px 76px 76px auto;
+      gap: 7px;
+    }
+    .effect-table-head {
+      align-items: center;
+      padding: 0 7px 4px;
+      color: var(--muted);
+      font-size: 12px;
+    }
+    .effect-row {
+      align-items: end;
+      padding: 7px;
+      border: 1px solid var(--line);
+      border-left-width: 3px;
+      border-radius: 4px;
+      background: var(--panel-2);
+    }
+    .effect-row.effect-score,
+    .effect-row.effect-goodScore { border-left-color: var(--gold); }
+    .effect-row.effect-concentration { border-left-color: var(--accent); }
+    .effect-row.effect-good { border-left-color: #d99ab8; }
+    .effect-row.effect-paramBoost,
+    .effect-row.effect-concGainBoost,
+    .effect-row.effect-concScoreBoost { border-left-color: var(--ok); }
+    .not-applicable { align-self: center; text-align: center; color: #717772; }
+    .effect-options {
+      grid-column: 1 / -1;
+      display: flex;
+      align-items: end;
+      flex-wrap: wrap;
+      gap: 7px;
+      padding-top: 2px;
+    }
+    .effect-options label { min-width: 82px; }
+    .effect-options label.check { min-width: auto; }
+    .effect-options input[type="number"] { width: 82px; }
+    .best-score { color: #f1cf78; font-weight: 800; background: #51462966; }
+
+    .effect-order-item, .carry-in-item, .route-name-item, .card-step {
+      display: grid;
+      align-items: center;
+      gap: 5px;
+      border: 1px solid var(--line);
+      border-radius: 5px;
+      background: var(--panel-2);
+      padding: 5px 7px;
+    }
+    .effect-order-item { grid-template-columns: 24px auto minmax(120px, 1fr) auto auto; }
+    .carry-in-item { grid-template-columns: minmax(150px, 1fr) auto 94px auto; }
+    .effect-settings { display: flex; align-items: center; gap: 8px; min-width: 0; }
+    .effect-settings label { display: flex; align-items: center; gap: 5px; white-space: nowrap; }
+    .effect-settings input[type="number"] { width: 64px; }
+    .route-name-item { grid-template-columns: minmax(0, 1fr) auto; cursor: pointer; }
+    .route-name-item.active { border-color: var(--accent); background: var(--accent-soft); }
+
+    .route-workspace { display: grid; grid-template-rows: auto minmax(0, 1fr); overflow: hidden; }
+    .route-toolbar { margin-bottom: 8px; flex-wrap: wrap; }
+    .turn-grid {
+      display: grid;
+      grid-template-columns: repeat(var(--turn-count, 1), minmax(230px, 1fr));
+      gap: 8px;
+      min-width: 0;
+      width: 100%;
+      height: 100%;
+      overflow-x: auto;
+      padding-bottom: 8px;
+    }
+    .turn-grid.single-turn { grid-template-columns: minmax(320px, 520px); }
+    .turn-grid.single-turn .turn-column { width: 100%; }
+    .turn-column {
+      width: 100%;
+      min-width: 230px;
+      min-height: 0;
+      display: grid;
+      grid-template-rows: auto auto minmax(0, 1fr);
+      border: 1px solid var(--line);
+      border-radius: 5px;
+      background: #202321;
+      overflow: hidden;
+    }
+    .turn-head { padding: 8px; border-bottom: 1px solid var(--line); background: #292d2a; }
+    .turn-add { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 5px; padding: 7px; }
+    .turn-cards { min-height: 0; overflow: auto; padding: 0 7px 7px; display: grid; gap: 5px; align-content: start; }
+    .card-step { grid-template-columns: 22px minmax(0, 1fr) auto auto; }
+    .card-step .upgrade-check { color: var(--text); font-size: 11px; }
+    .card-step-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+    table { width: 100%; border-collapse: collapse; }
+    th, td { border-bottom: 1px solid var(--line); padding: 7px; text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; }
+    th { background: #292d2a; color: #d4d5d0; font-size: 12px; }
+    tbody tr:nth-child(even) { background: #ffffff05; }
+    th:first-child, td:first-child, th:nth-child(2), td:nth-child(2) { text-align: left; }
+    tbody tr.selectable { cursor: pointer; }
+    tbody tr.selectable:hover { background: #303632; }
+    tbody tr.selected { background: var(--accent-soft); }
+    .rank-1 td:first-child { color: var(--gold); font-weight: 800; }
+    .metrics { display: grid; grid-template-columns: repeat(4, minmax(100px, 1fr)); gap: 6px; }
+    .metric { border: 1px solid var(--line); border-radius: 5px; padding: 8px; background: var(--field); }
+    .metric-value { margin-top: 2px; font-size: 17px; font-weight: 800; }
+    .turn-result { border: 1px solid var(--line); border-radius: 5px; overflow: hidden; }
+    .turn-result > summary { cursor: pointer; padding: 8px 10px; background: #303431; font-weight: 700; }
+    .turn-result-body { padding: 7px; overflow-x: auto; }
+    .events { margin: 4px 0 0; padding-left: 18px; color: var(--muted); font-size: 12px; }
+
+    .app-footer {
+      display: grid;
+      grid-template-columns: 1fr auto 1fr;
+      align-items: center;
+      gap: 10px;
+      padding: 7px 12px;
+      border-top: 1px solid var(--line);
+      background: var(--chrome);
+    }
+    #next-step { justify-self: end; }
+    #previous-step { justify-self: start; }
+    #previous-step, #next-step { width: auto; min-width: 92px; }
+    #save-status { text-align: center; }
+
+    dialog {
+      width: min(760px, calc(100% - 24px));
+      max-height: calc(100dvh - 30px);
+      border: 1px solid var(--line-strong);
+      border-radius: 6px;
+      padding: 12px;
+      background: var(--panel);
+      color: var(--text);
+    }
+    dialog::backdrop { background: #101210cc; }
+    dialog textarea { min-height: 260px; font: 11px ui-monospace, Consolas, monospace; }
+
+    @media (max-width: 900px) {
+      body { overflow: auto; }
+      .app-shell { min-height: 100dvh; height: auto; grid-template-rows: auto auto minmax(650px, 1fr) auto; }
+      .screen-grid.cards, .screen-grid.scene, .screen-grid.routes, .screen-grid.results { grid-template-columns: 1fr; overflow: auto; }
+      .screen-grid.scene { grid-template-rows: auto auto auto; }
+      .scene-preset-bar { grid-column: auto; grid-template-columns: 1fr 1fr; }
+      .scene-preset-bar strong, .scene-preset-bar select { grid-column: 1 / -1; }
+      .screen-grid.routes { grid-template-rows: 180px minmax(500px, 1fr); }
+      .library-toolbar { grid-template-columns: auto minmax(130px, 1fr) auto; }
+      .library-toolbar select { display: none; }
+      .card-definition-bar { grid-template-columns: 1fr 120px; }
+      .card-definition-bar > strong { display: none; }
+      .card-definition-bar .button-row { grid-column: 1 / -1; }
+      .effect-table-head { display: none; }
+      .effect-row { grid-template-columns: repeat(2, minmax(100px, 1fr)); }
+      .effect-row .effect-actions { grid-column: 1 / -1; }
+      .carry-in-item { grid-template-columns: minmax(130px, 1fr) auto; }
+      .carry-in-item .carry-turn { grid-column: 1 / 2; }
+      .metrics { grid-template-columns: repeat(2, minmax(100px, 1fr)); }
+    }
+  .variant-section { border-top:1px solid var(--line); padding:12px 0; display:grid; gap:8px; }
+    .variant-row { display:grid; grid-template-columns:repeat(auto-fit,minmax(105px,1fr)); gap:8px; align-items:end; }
+    .configuration { display:grid; gap:12px; }
+    .variant-definition { padding:12px; border:1px solid var(--line); border-radius:6px; }
+    #route-card-dialog { width:min(920px,95vw); max-height:90vh; overflow:auto; }
+    #route-card-dialog .effect-row { min-width:0; }
+    .buff-inputs { grid-column:1 / -1; display:grid; gap:7px; }
+    .buff-input-row { display:grid; grid-template-columns:minmax(105px,1fr) 82px 132px; gap:8px; align-items:center; font-size:13px; }
+    .buff-percent, .buff-duration { display:flex; gap:5px; align-items:center; margin:0; white-space:nowrap; }
+    .buff-percent input { width:60px; }
+    .buff-duration input { width:55px; }
+    @media(max-width:480px) { .buff-input-row { grid-template-columns:minmax(86px,1fr) 65px 110px; gap:4px; font-size:12px; } .buff-percent input { width:48px; } .buff-duration input { width:40px; } }
+    .conc-score-row { grid-template-columns:52px minmax(44px,60px) minmax(88px,112px) max-content; gap:4px; min-width:0; }
+    .conc-score-row .buff-percent, .conc-score-row .buff-duration { min-width:0; gap:3px; }
+    .conc-score-row .buff-percent input { width:100%; min-width:0; padding-inline:3px; }
+    .conc-score-row .buff-duration input { width:38px; min-width:0; padding-inline:2px; }
+    .buff-fresh { display:flex; align-items:center; gap:3px; white-space:nowrap; margin:0; font-size:12px; }
+    .buff-fresh input { margin:0; flex:none; }
+    @media(max-width:480px) { .conc-score-row { grid-template-columns:48px minmax(36px,1fr) 92px max-content; gap:2px; font-size:11px; } .conc-score-row .buff-fresh { font-size:10px; gap:2px; } .conc-score-row .buff-duration input { width:32px; } }
+    .buff-inputs { container-type:inline-size; }
+    .buff-input-row, .conc-score-row { grid-template-columns:minmax(98px,1fr) 72px 124px max-content; column-gap:12px; min-width:0; white-space:nowrap; }
+    .buff-percent, .buff-duration { min-width:0; gap:5px; }
+    .buff-input-row .buff-percent input { width:52px; min-width:0; }
+    .buff-input-row .buff-duration input { width:48px; min-width:0; }
+    .buff-fresh { gap:5px; font-size:12px; }
+    @container(max-width:450px) {
+      .buff-input-row, .conc-score-row { grid-template-columns:minmax(90px,1fr) 58px 108px max-content; column-gap:6px; font-size:12px; }
+      .buff-input-row .buff-percent input { width:40px; }
+      .buff-input-row .buff-duration input { width:38px; }
+      .buff-fresh { font-size:11px; gap:3px; }
+    }
+    @container(max-width:375px) {
+      .buff-input-row, .conc-score-row { grid-template-columns:minmax(82px,1fr) 46px 94px max-content; column-gap:3px; font-size:11px; }
+      .buff-input-row .buff-percent input { width:32px; padding-inline:2px; }
+      .buff-input-row .buff-duration input { width:30px; padding-inline:2px; }
+      .buff-fresh { font-size:10px; gap:2px; }
+    }
+
+    .card-editor-content { max-width:1060px; gap:16px; }
+    .card-definition-bar { padding:12px; border:1px solid var(--line); border-radius:8px; background:var(--panel-2); grid-template-columns:minmax(160px,1fr) 130px auto; gap:10px; }
+    .card-definition-bar > strong { display:none; }
+    .definition-workspace { border:1px solid var(--line); border-radius:8px; overflow:clip; background:var(--panel); }
+    .definition-tabs { display:flex; gap:5px; padding:10px; border-bottom:1px solid var(--line); background:var(--chrome); flex-wrap:wrap; }
+    .definition-tabs button { min-width:70px; padding:8px 16px; border-color:transparent; background:transparent; color:var(--muted); font-weight:700; }
+    .definition-tabs button[aria-selected="true"] { color:var(--text); border-color:#628ead; background:var(--accent-soft); }
+    .definition-tabs .definition-custom-tab { margin-left:auto; border-left-color:var(--line); }
+    .definition-body { display:grid; gap:16px; padding:16px; }
+    .definition-body h3 { margin:0; font-size:14px; }
+    .definition-body .effect-group { border:0; padding:0; background:transparent; }
+    .definition-body .effect-row { grid-template-columns:minmax(120px,1.5fr) minmax(60px,.8fr) minmax(48px,.55fr) minmax(60px,.7fr) minmax(60px,.7fr) auto; align-items:center; padding:10px; gap:8px; }
+    .definition-body .effect-table-head { grid-template-columns:minmax(120px,1.5fr) minmax(60px,.8fr) minmax(48px,.55fr) minmax(60px,.7fr) minmax(60px,.7fr) auto; gap:8px; padding-inline:10px; }
+    .definition-body .effect-row input, .definition-body .effect-row select { min-width:0; }
+    .definition-secondary, .definition-advanced { border:1px solid var(--line); border-radius:6px; padding:0 12px; }
+    .definition-secondary > summary, .definition-advanced > summary { cursor:pointer; padding:11px 0; color:var(--muted); font-size:13px; font-weight:700; }
+    .definition-secondary[open], .definition-advanced[open] { padding-bottom:12px; }
+    .definition-secondary > section + section { margin-top:16px; padding-top:16px; border-top:1px solid var(--line); }
+    .definition-variant { display:grid; gap:14px; }
+    .definition-group-header { display:flex; gap:12px; align-items:center; }
+    .definition-group-header > input { max-width:320px; }
+    .definition-effect-section { display:grid; gap:8px; }
+    .definition-value-row { display:flex; flex-wrap:wrap; gap:10px; align-items:end; background:var(--panel-2); border:1px solid var(--line); border-radius:6px; padding:12px; }
+    .definition-value-row > strong { min-width:120px; flex:1 1 120px; align-self:center; font-size:13px; }
+    .definition-value-row label { flex:0 1 90px; width:90px; min-width:70px; font-size:12px; color:var(--muted); }
+    .definition-value-row input { color:var(--text); }
+    .definition-custom-bar { display:grid; grid-template-columns:minmax(160px,1fr) auto; gap:10px; align-items:end; }
+    .definition-patch-row { padding:10px 0; border-bottom:1px solid var(--line); margin-bottom:10px; }
+    .definition-patch-row label { font-size:12px; color:var(--muted); }
+    .definition-patch-row button { align-self:end; }
+    .definition-custom-actions { display:flex; justify-content:flex-end; }
+    @media(max-width:700px) {
+      .card-definition-bar { grid-template-columns:minmax(0,1fr) 110px; }
+      .definition-body { padding:10px; }
+      .definition-tabs button { min-width:52px; padding:7px 10px; }
+      .definition-body .effect-row { grid-template-columns:repeat(2,minmax(0,1fr)); }
+      .definition-body .effect-row .effect-actions { grid-column:1/-1; justify-content:flex-end; }
+      .definition-body .effect-table-head { display:none; }
+      .definition-custom-bar { grid-template-columns:minmax(0,1fr); }
+      .definition-custom-bar > button { grid-column:1/-1; }
+    }
+    .definition-bulk-row { display:flex; flex-wrap:nowrap; align-items:center; gap:8px; width:fit-content; max-width:100%; margin-top:12px; padding:10px; border:1px solid var(--line); border-radius:6px; }
+    .definition-bulk-row select { min-width:60px; width:180px; flex:0 1 180px; }
+    .definition-bulk-row select:first-child { width:76px; flex:0 0 76px; }
+    .definition-bulk-row button { flex:none; width:auto; white-space:nowrap; font-size:12px; }
+    @media(max-width:600px) { .definition-bulk-row { gap:6px; padding:8px; } .definition-bulk-row select:first-child { flex-basis:60px; width:60px; } .definition-bulk-row select { min-width:40px; width:100px; font-size:12px; } .definition-bulk-row button { font-size:11px; padding:6px; } }
+    #open-help { width:34px; height:34px; padding:0; border-radius:50%; font-size:17px; font-weight:700; }
+    #help-dialog { width:min(620px,calc(100vw - 28px)); max-height:calc(100dvh - 28px); padding:0; border-radius:10px; overflow:hidden; }
+    #help-dialog[open] { display:flex; flex-direction:column; }
+    .help-header { display:flex; align-items:center; justify-content:space-between; gap:12px; padding:16px 22px; border-bottom:1px solid var(--line); background:var(--chrome); }
+    .help-header h2 { margin:0; font-size:17px; }
+    #close-help { width:32px; height:32px; padding:0; font-size:22px; line-height:1; }
+    #help-content { padding:24px; height:clamp(240px,50dvh,360px); min-height:0; overflow-y:auto; overscroll-behavior:contain; line-height:1.8; }
+    #help-content [hidden] { display:none!important; }
+    #help-content h3 { margin:0 0 20px; font-size:20px; line-height:1.5; }
+    #help-content h3 span { color:var(--accent); margin-right:6px; }
+    #help-content p { margin:0 0 16px; }
+    #help-content ul { margin:0 0 16px; padding-left:22px; }
+    #help-content li + li { margin-top:6px; }
+    .help-example { border-left:3px solid var(--accent); padding:10px 14px; background:var(--accent-soft); border-radius:0 5px 5px 0; font-size:13px; }
+    #help-content .help-score-note { padding-top:16px; border-top:1px solid var(--line); font-size:13px; color:var(--muted); }
+    .help-footer { display:flex; flex:none; align-items:center; justify-content:space-between; gap:12px; padding:14px 22px; border-top:1px solid var(--line); }
+    .help-footer button { min-width:90px; }
+    #help-page-number { color:var(--muted); font-size:13px; font-variant-numeric:tabular-nums; }
+    @media(max-width:480px) { .help-header { padding:12px 16px; } #help-content { padding:20px 16px; } #help-content h3 { font-size:18px; } .help-footer { padding:12px 16px; } }
+    </style>
+  <link rel="stylesheet" href="./route-mobile.css">
+</head>
+<body>
+  <div class="app-shell">
+    <header class="app-header">
+      <div class="title-wrap">
+        <h1>センス計算ツール</h1>
+      </div>
+      <div class="button-row">
+        <button id="open-help" type="button" aria-label="使い方" aria-haspopup="dialog" aria-controls="help-dialog">？</button>
+        <button id="open-data" type="button">保存データ</button>
+        <button id="save-now" class="primary" type="button">保存</button>
+      </div>
+    </header>
+
+    <nav class="stepper" aria-label="画面">
+      <button class="step-button active" data-step="0" type="button">カード定義</button><span class="step-arrow">→</span>
+      <button class="step-button" data-step="1" type="button">局面設定</button><span class="step-arrow">→</span>
+      <button class="step-button" data-step="2" type="button">ルート設定</button><span class="step-arrow">→</span>
+      <button class="step-button" data-step="3" type="button">結果・比較</button>
+    </nav>
+
+    <main class="screen-area">
+      <section class="screen active" data-screen="0" aria-label="カード定義">
+        <div class="screen-grid cards">
+          <section id="card-library-view" class="panel card-subview card-library-view active">
+            <div class="library-toolbar">
+              <h2>カード倉庫</h2>
+              <input id="card-search" type="search" placeholder="カード名で検索">
+              <select id="card-kind-filter" aria-label="カード種別">
+                <option value="all">全種別</option>
+                <option value="active">アクティブ</option>
+                <option value="mental">メンタル</option>
+                <option value="drink">その他</option>
+              </select>
+              <select id="card-sort" aria-label="並び順">
+                <option value="name">名前順</option>
+                <option value="created">登録順</option>
+              </select>
+              <button id="add-card" class="primary small" type="button">＋追加</button>
+            </div>
+            <div id="card-library" class="library-list scroll"></div>
+            <div id="selected-card-bar" class="selected-card-bar"></div>
+          </section>
+          <section id="card-editor-view" class="panel card-subview card-editor-view">
+            <div class="card-editor-nav">
+              <button id="back-card-library" type="button">←カード倉庫に戻る</button>
+              <span id="editing-card-name" class="muted"></span>
+            </div>
+            <div id="card-editor" class="card-editor scroll"></div>
+          </section>
+        </div>
+      </section>
+
+      <section class="screen" data-screen="1" aria-label="局面設定">
+        <div class="screen-grid scene">
+          <section class="panel scene-preset-bar">
+            <strong>局面プリセット</strong>
+            <select id="scene-preset-select" aria-label="局面プリセット"></select>
+            <button id="load-scene-preset" type="button">読込</button>
+            <button id="save-scene-preset" class="primary" type="button">新規保存</button>
+            <button id="overwrite-scene-preset" type="button">上書き</button>
+            <button id="delete-scene-preset" class="danger" type="button">削除</button>
+          </section>
+          <section class="panel scroll stack">
+            <div class="panel-header"><h2>開始局面</h2></div>
+            <div class="fields">
+              <label>残りターン<input id="remaining-turns" type="number" min="1" max="10" step="1" value="1"></label>
+              <label>これまでのスコア<input id="previous-score" type="number" min="0" step="1" value="0"></label>
+              <label>初期集中<input id="initial-concentration" type="number" step="1" value="125"></label>
+              <label>初期好調<input id="initial-good" type="number" step="1" value="74"></label>
+              <label>パラメータ上昇量増加%<input id="initial-param-boost" type="number" step="1" value="60"></label>
+              <div class="buff-inputs">
+                <div class="buff-input-row"><span>集中増加量増加</span><label class="buff-percent"><input aria-label="集中増加量増加%" id="initial-conc-gain-boost" type="number" step="5" value="50"><span>%</span></label><label class="buff-duration"><span>残りターン</span><input aria-label="集中増加量増加の残りターン" id="conc-gain-boost-turns" type="number" min="0" max="99" step="1" value="1"></label><label class="buff-fresh"><input id="conc-gain-boost-fresh" type="checkbox">このターンに付与</label></div>
+                <div class="buff-input-row"><span>好調増加量増加</span><label class="buff-percent"><input aria-label="好調増加量増加%" id="initial-good-gain-boost" type="number" min="0" step="10" value="0"><span>%</span></label><label class="buff-duration"><span>残りターン</span><input aria-label="好調増加量増加の残りターン" id="good-gain-boost-turns" type="number" min="0" max="99" step="1" value="1"></label><label class="buff-fresh"><input id="good-gain-boost-fresh" type="checkbox">このターンに付与</label></div>
+                <div class="buff-input-row conc-score-row"><span>集中強化</span><label class="buff-percent"><input aria-label="集中強化1の%" id="initial-conc-score-boost" type="number" min="0" step="5" value="0"><span>%</span></label><label class="buff-duration"><span>残りターン</span><input aria-label="集中強化1の残りターン" id="conc-score-boost-turns" type="number" min="0" max="99" step="1" value="1"></label><label class="buff-fresh"><input id="conc-score-boost-fresh" type="checkbox">このターンに付与</label></div>
+                <div class="buff-input-row conc-score-row"><span>集中強化</span><label class="buff-percent"><input aria-label="集中強化2の%" id="initial-conc-score-boost-2" type="number" min="0" step="5" value="0"><span>%</span></label><label class="buff-duration"><span>残りターン</span><input aria-label="集中強化2の残りターン" id="conc-score-boost-turns-2" type="number" min="0" max="99" step="1" value="1"></label><label class="buff-fresh"><input id="conc-score-boost-fresh-2" type="checkbox">このターンに付与</label></div>
+                <div class="buff-input-row conc-score-row"><span>集中強化</span><label class="buff-percent"><input aria-label="集中強化3の%" id="initial-conc-score-boost-3" type="number" min="0" step="5" value="0"><span>%</span></label><label class="buff-duration"><span>残りターン</span><input aria-label="集中強化3の残りターン" id="conc-score-boost-turns-3" type="number" min="0" max="99" step="1" value="1"></label><label class="buff-fresh"><input id="conc-score-boost-fresh-3" type="checkbox">このターンに付与</label></div>
+              </div>
+              <label class="check"><input id="super-good" type="checkbox" checked>絶好調として計算</label>
+            </div>
+            <h3>ターン倍率</h3>
+            <div class="fields compact">
+              <label>Vo %<input id="vo-multiplier" type="number" step="1" value="4300"></label>
+              <label>Da %<input id="da-multiplier" type="number" step="1" value="4300"></label>
+              <label>Vi %<input id="vi-multiplier" type="number" step="1" value="4300"></label>
+            </div>
+            <textarea id="scenario-memo" hidden></textarea>
+          </section>
+
+          <section class="panel scroll stack">
+            <div class="panel-header"><h2>パッシブ・外部効果</h2></div>
+            <div id="external-order" class="stack"></div>
+            <div class="panel-header"><h3>開始前に使用済み</h3><button id="add-carry-in" class="small" type="button">＋追加</button></div>
+            <div id="carry-in-list" class="stack"></div>
+          </section>
+        </div>
+      </section>
+
+      <section class="screen" data-screen="2" aria-label="ルート設定">
+        <div class="screen-grid routes">
+          <aside class="panel stack">
+            <div class="panel-header"><h2>ルート</h2><button id="add-route" class="primary small" type="button">＋追加</button></div>
+            <div id="route-library" class="stack scroll"></div>
+            <div class="button-row">
+              <button id="duplicate-route" class="small" type="button">複製</button>
+              <button id="delete-route" class="small danger" type="button">削除</button>
+            </div>
+          </aside>
+          <section class="panel route-workspace">
+            <div class="route-toolbar row between">
+              <label style="grid-template-columns:auto minmax(140px,280px);align-items:center;">ルート名<input id="route-name" type="text"></label>
+              <div class="row"><span id="route-total-preview" class="score"></span><button id="share-edit-route" class="small" type="button">このルートをコピー</button></div>
+            </div>
+            <div id="turn-grid" class="turn-grid scroll"></div>
+          </section>
+        </div>
+      </section>
+
+      <section class="screen" data-screen="3" aria-label="結果・比較">
+        <div class="screen-grid results">
+          <section class="panel scroll">
+            <div class="panel-header"><h2>合計スコアランキング</h2><button id="recalculate" class="small primary" type="button">再計算</button></div>
+            <label class="check"><input id="show-final-score" type="checkbox">最終スコア</label>
+            <div id="ranking"></div>
+          </section>
+          <section class="panel scroll stack">
+            <div class="panel-header"><h2 id="result-title">ルート詳細</h2><button id="share-result-route" class="small" type="button">このルートをコピー</button><label class="check"><input id="log-detail" type="checkbox">計算ログ</label></div>
+            <div id="result-summary" class="metrics"></div>
+            <div id="result-detail" class="stack"></div>
+          </section>
+        </div>
+      </section>
+    </main>
+
+    <footer class="app-footer">
+      <button id="previous-step" type="button">← 前へ</button>
+      <span id="save-status" class="muted">自動保存</span>
+      <button id="next-step" class="primary" type="button">次へ →</button>
+    </footer>
+  </div>
+
+  <dialog id="help-dialog" aria-labelledby="help-title">
+    <header class="help-header"><h2 id="help-title">使い方</h2><button id="close-help" type="button" aria-label="ヘルプを閉じる" autofocus>×</button></header>
+    <div id="help-content">
+      <section data-help-page="0" aria-labelledby="help-heading-0">
+        <h3 id="help-heading-0"><span>①</span> このツールは何？</h3>
+        <p>脚光軸でのカード使用ルートを複数入力し、それぞれの火力を計算・比較できるツールです。</p>
+      </section>
+      <section data-help-page="1" aria-labelledby="help-heading-1" hidden>
+        <h3 id="help-heading-1"><span>②</span> カード定義</h3>
+        <p>事前に用意されたカードが登録されています。</p>
+        <ul><li>新しいカードを追加するときは、右上の「＋追加」を押します。</li><li>登録済みのカードは、選択して「編集」から変更できます。</li></ul>
+        <p>編集画面の下部で基本状態とカスタムを選び、「このカスタムを全ルートに適用」を押すと、既存のルートと今後追加するカードに反映されます。</p>
+        <div class="help-example">例：アドリブに「好調7（2カスタム）」を指定すると、ルートに追加するアドリブもその設定になります。</div>
+      </section>
+      <section data-help-page="2" aria-labelledby="help-heading-2" hidden>
+        <h3 id="help-heading-2"><span>③</span> 局面設定</h3>
+        <p>計算を始める時点の集中・好調・バフなどを入力します。</p>
+        <p>設定した局面は「新規保存」で、このブラウザに保存できます。保存した局面は「局面プリセット」から選び、「読込」で呼び出せます。</p>
+      </section>
+      <section data-help-page="3" aria-labelledby="help-heading-3" hidden>
+        <h3 id="help-heading-3"><span>④</span> ルート設定</h3>
+        <p>ターンごとに、使用するカードを順番に設定します。</p>
+        <p>複数のルートを作成できるので、どの手順で最も火力が高くなるかを比較できます。</p>
+        <p>計算するターン数は「局面設定」で変更できます。</p>
+      </section>
+      <section data-help-page="4" aria-labelledby="help-heading-4" hidden>
+        <h3 id="help-heading-4"><span>⑤</span> 結果・比較</h3>
+        <p>ルートごとの各ターンのスコアと、合計スコアを比較できます。</p>
+        <p>カードごとの点数や、計算の詳細も確認できます。</p>
+        <p class="help-score-note">計算結果は、実機のスコアとわずかに異なる場合があります。</p>
+      </section>
+    </div>
+    <footer class="help-footer"><button id="help-previous" type="button" disabled>← 前へ</button><span id="help-page-number" aria-live="polite" aria-atomic="true">1 / 5</span><button id="help-next" class="primary" type="button">次へ →</button></footer>
+  </dialog>
+
+  <dialog id="data-dialog">
+    <div class="panel-header"><h2>保存データ</h2><button id="close-data" type="button">閉じる</button></div>
+    <div class="button-row">
+      <button id="export-json" class="primary" type="button">JSON書き出し・コピー</button>
+      <button id="export-route" type="button">選択ルートだけコピー</button>
+      <button id="import-json" type="button">JSON読み込み</button>
+      <button id="export-cards" type="button">カード定義だけ書き出し</button>
+      <button id="import-cards" type="button">カード定義だけ読み込み</button>
+      <button id="reset-storage" class="danger" type="button">初期値に戻す</button>
+    </div>
+    <textarea id="save-json" placeholder="JSON書き出し結果、または読み込みたいJSON"></textarea>
+  </dialog>
+
+  <dialog id="route-card-dialog"><div class="panel-header"><h2 id="route-card-title">カード設定</h2><button id="close-route-card" type="button">閉じる</button></div><div id="route-card-content"></div></dialog>
+  <script src="./route-card-model.js"></script>
+  <script src="./route-card-editor.js"></script>
+  <script src="./card-library-preset.js"></script>
+  <script src="./app.js"></script>
+  <script src="./anomaly.js"></script>
+  <script src="./fusion-engine.js"></script>
+  <script src="./integration.js"></script>
+  <script src="./route-tools.js"></script>
+  <script src="./route-drag.js"></script>
+  <script src="./route-help.js"></script>
+  <script src="./route-mobile.js"></script>
+</body>
+</html>
+
+
+
+
+

@@ -1,0 +1,112 @@
+/* Desktop additions stay hidden. All existing desktop geometry is retained. */
+.mobile-turn-nav, .mobile-card-actions { display: none; }
+
+@media (max-width: 600px) {
+  html { height: auto; }
+  body { min-width: 0; height: auto; overflow: auto; }
+  .app-shell { display: block; min-height: 100dvh; height: auto; }
+  .app-header { padding: 10px 12px; gap: 8px; }
+  .title-wrap { flex: 1 1 140px; }
+  .app-header h1 { font-size: 18px; }
+  .app-header > .button-row { margin-left: auto; gap: 6px; }
+  button, input:not([type="checkbox"]), select { min-height: 44px; }
+  input:not([type="checkbox"]), select, textarea { font-size: 16px; }
+  input[type="checkbox"] { width: 18px; height: 18px; flex: none; }
+  label.check { min-height: 44px; }
+  button { touch-action: manipulation; }
+  #open-help, #close-help { width: 44px; height: 44px; }
+  .stepper { display: grid; grid-template-columns: repeat(4,minmax(0,1fr)); gap: 3px; padding: 6px 8px; }
+  .step-arrow { display: none; }
+  .step-button { min-width: 0; padding: 8px 2px; font-size: 12px; }
+  .screen-area { padding: 8px; }
+  .screen { height: auto; overflow: visible; }
+  .screen-grid { height: auto; min-height: 0; }
+  .screen-grid.cards, .screen-grid.scene, .screen-grid.routes, .screen-grid.results { grid-template-columns: minmax(0,1fr); grid-template-rows: auto; overflow: visible; }
+  .panel { padding: 10px; }
+  .panel-header { flex-wrap: wrap; }
+  .card-subview { height: auto; }
+  .card-library-view { grid-template-rows: auto auto auto; }
+  .library-toolbar { grid-template-columns: minmax(0,1fr) auto; gap: 8px; }
+  .library-toolbar h2 { grid-column: 1; }
+  #add-card { grid-column: 2; grid-row: 1; }
+  #card-search { grid-column: 1 / -1; }
+  .library-toolbar select { display: block; width: 100%; }
+  .library-list { grid-template-columns: repeat(2,minmax(0,1fr)); height: auto; overflow: visible; }
+  .library-item { grid-template-columns: minmax(0,1fr); gap: 5px; padding: 10px; }
+  .library-name { white-space: normal; overflow-wrap: anywhere; font-size: 14px; }
+  .kind-badge { justify-self: start; }
+  .selected-card-bar { flex-wrap: wrap; }
+  .selected-card-title { white-space: normal; overflow-wrap: anywhere; }
+  .card-editor-nav { flex-wrap: wrap; }
+  .card-editor { height: auto; overflow: visible; }
+  .card-definition-bar { grid-template-columns: minmax(0,1fr) 110px; padding: 10px; }
+  .card-definition-bar .button-row { justify-content: flex-end; }
+  .definition-tabs { gap: 4px; padding: 8px; }
+  .definition-tabs button { min-width: 44px; padding: 7px 8px; font-size: 14px; }
+  .definition-body { padding: 10px; }
+  .definition-value-row { padding: 10px; }
+  .definition-value-row > strong { flex-basis: 100%; min-width: 0; }
+  .definition-value-row label { width: auto; flex: 1 1 90px; }
+  .definition-patch-row { grid-template-columns: repeat(2,minmax(0,1fr)); }
+  .definition-bulk-row { display: grid; grid-template-columns: 70px minmax(0,1fr); width: 100%; padding: 8px; }
+  .definition-bulk-row select, .definition-bulk-row select:first-child { width: 100%; min-width: 0; font-size: 16px; }
+  .definition-bulk-row > button { grid-column: 1 / -1; justify-self: end; font-size: 13px; }
+  .fields { grid-template-columns: repeat(2,minmax(0,1fr)); gap: 10px; }
+  .fields.compact { grid-template-columns: repeat(3,minmax(0,1fr)); }
+  .scene-preset-bar { grid-template-columns: repeat(2,minmax(0,1fr)); }
+  .scene-preset-bar strong, .scene-preset-bar select { grid-column: 1 / -1; }
+  .buff-inputs { gap: 10px; }
+  .buff-input-row, .conc-score-row { grid-template-columns: minmax(0,1fr) 64px minmax(100px,1fr); gap: 6px; padding: 10px 0; border-top: 1px solid var(--line); font-size: 12px; }
+  .buff-input-row > span { white-space: normal; }
+  .buff-input-row .buff-percent input { width: 46px; padding-inline: 3px; }
+  .buff-input-row .buff-duration { gap: 4px; }
+  .buff-duration > span { white-space: normal; font-size: 11px; }
+  .buff-input-row .buff-duration input { width: 38px; padding-inline: 2px; }
+  .buff-input-row .buff-fresh { grid-column: 1 / -1; justify-self: end; gap: 6px; min-height: 36px; font-size: 13px; }
+  .effect-order-item { grid-template-columns: 20px minmax(0,1fr) 44px 44px; padding: 8px; }
+  .effect-order-item > .check { grid-column: 2; }
+  .effect-order-item > button { grid-row: 1; }
+  .effect-order-item > .effect-settings { grid-column: 1 / -1; grid-row: 2; flex-wrap: wrap; }
+  .effect-settings { flex-wrap: wrap; }
+  .carry-in-item { grid-template-columns: 64px minmax(0,1fr) 44px; }
+  .carry-in-item > select { grid-column: 1 / -1; width: 100%; min-width: 0; }
+  .carry-in-item .carry-turn { grid-column: 2; }
+  .screen-grid.routes > aside { display: flex; flex-direction: column; }
+  #route-library { max-height: 160px; overflow-y: auto; }
+  .route-history-toolbar { grid-template-columns: 44px 44px minmax(0,1fr); }
+  .route-history-toolbar #routes-clear { grid-column: 3; }
+  .route-name-item { min-height: 44px; }
+  .route-workspace { display: flex; flex-direction: column; overflow: visible; }
+  .route-toolbar { align-items: stretch; gap: 8px; }
+  .route-toolbar > label { width: 100%; grid-template-columns: auto minmax(0,1fr)!important; }
+  .route-toolbar > .row { width: 100%; justify-content: space-between; flex-wrap: wrap; }
+  .mobile-turn-nav { display: flex; gap: 6px; overflow-x: auto; margin-bottom: 10px; padding-bottom: 4px; }
+  .mobile-turn-nav button { flex: none; white-space: nowrap; font-size: 13px; }
+  .mobile-turn-nav button[aria-pressed="true"] { background: var(--accent-soft); border-color: var(--accent); }
+  .turn-grid, .turn-grid.single-turn { display: grid; grid-template-columns: minmax(0,1fr); height: auto; overflow: visible; padding-bottom: 0; }
+  .turn-column { min-width: 0; grid-template-rows: auto auto auto; }
+  .turn-grid.mobile-turns-ready > .turn-column:not(.mobile-active-turn) { display: none; }
+  .turn-cards { overflow: visible; }
+  .card-step { grid-template-columns: 20px minmax(0,1fr) 52px 44px; padding: 8px; gap: 5px; }
+  .card-step-name { white-space: normal; overflow-wrap: anywhere; font-size: 14px; }
+  .mobile-card-actions { display: flex; grid-column: 2 / -1; gap: 6px; }
+  .mobile-card-actions button { width: 44px; flex: none; }
+  .mobile-card-actions select { min-width: 0; flex: 1; }
+  #ranking { max-width: 100%; overflow-x: auto; }
+  #ranking table { min-width: max-content; }
+  .metrics { grid-template-columns: repeat(2,minmax(0,1fr)); }
+  .metric-value { font-size: 16px; overflow-wrap: anywhere; }
+  .app-footer { grid-template-columns: auto minmax(0,1fr) auto; gap: 8px; padding: 10px 8px; padding-bottom: max(10px,env(safe-area-inset-bottom)); }
+  #previous-step, #next-step { min-width: 76px; padding-inline: 8px; font-size: 13px; }
+  #save-status { overflow-wrap: anywhere; font-size: 11px; }
+  dialog { width: calc(100% - 16px); max-height: calc(100dvh - 16px); padding: 10px; overflow-y: auto; }
+  #route-card-dialog { width: calc(100% - 16px); max-height: calc(100dvh - 16px); }
+  .configuration .variant-row { grid-template-columns: minmax(0,1fr); }
+  dialog .effect-row { grid-template-columns: repeat(2,minmax(0,1fr)); }
+  .effect-options { gap: 8px; }
+  .effect-options label { min-width: 0; }
+  .effect-options input[type="number"] { width: 80px; }
+  #data-dialog .button-row { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); }
+  #data-dialog .button-row button { min-width: 0; padding: 7px; font-size: 12px; }
+  #data-dialog textarea { width: 100%; min-height: 180px; font-size: 16px; }
+}
