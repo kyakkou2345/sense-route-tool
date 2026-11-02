@@ -54,7 +54,7 @@
       tab.addEventListener('click', () => selectTurn(turnIndex)); buttons.push(tab); nav.append(tab);
       const rows = [...columns[turnIndex].querySelectorAll('.card-step')];
       rows.forEach((row, cardIndex) => {
-        row.draggable = !narrow.matches;
+        row.draggable = false;
         const actions = document.createElement('div'); actions.className = 'mobile-card-actions';
         const up = document.createElement('button'); up.type = 'button'; up.textContent = '↑';
         up.setAttribute('aria-label', 'カードを1つ上へ'); up.disabled = cardIndex === 0;
@@ -80,7 +80,7 @@
     });
   };
   narrow.addEventListener('change', () => {
-    document.querySelectorAll('#turn-grid .card-step').forEach(row => { row.draggable = !narrow.matches; });
+    document.querySelectorAll('#turn-grid .card-step').forEach(row => { row.draggable = false; });
   });
   renderRoutes();
 })();

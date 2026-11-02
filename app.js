@@ -2155,6 +2155,22 @@ function renderAll() {
 }
 
 function bindEvents() {
+  let selectOnClick = null;
+  const editableNumber = target => target instanceof HTMLInputElement
+    && target.type === 'number' && !target.disabled && !target.readOnly;
+  document.addEventListener('pointerdown', ({ target }) => {
+    selectOnClick = editableNumber(target) && document.activeElement !== target ? target : null;
+  }, true);
+  document.addEventListener('focusin', ({ target }) => {
+    if (editableNumber(target)) target.select();
+  }, true);
+  document.addEventListener('click', ({ target }) => {
+    const input = selectOnClick;
+    selectOnClick = null;
+    // Restore selection after the first click/tap places its caret.
+    if (target === input && editableNumber(input) && document.activeElement === input) input.select();
+  }, true);
+
   $('show-final-score').addEventListener('change', () => {
     state.scenario.showFinalScore = $('show-final-score').checked;
     renderResults();
