@@ -494,6 +494,19 @@
     #help-content p { margin:0 0 16px; }
     #help-content ul { margin:0 0 16px; padding-left:22px; }
     #help-content li + li { margin-top:6px; }
+    #help-content .help-flow { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:14px; list-style:none; margin:0 0 20px; padding:0; }
+    .help-flow li { position:relative; margin:0!important; padding:10px 4px; border:1px solid var(--line); border-radius:6px; background:var(--accent-soft); text-align:center; font-size:12px; }
+    .help-flow strong,.help-flow span { display:block; }
+    .help-flow strong { color:var(--accent); font-size:13px; }
+    .help-flow li:not(:last-child)::after { content:'→'; position:absolute; right:-14px; top:50%; transform:translateY(-50%); color:var(--muted); }
+    .help-terms { margin:0 0 16px; font-size:13px; }
+    .help-terms dt { font-weight:700; }
+    .help-terms dd { margin:0 0 8px; }
+    @media(max-width:480px) {
+      #help-content .help-flow { grid-template-columns:1fr; }
+      .help-flow li { display:flex; justify-content:center; gap:12px; padding:5px; }
+      .help-flow li:not(:last-child)::after { content:'↓'; top:100%; bottom:auto; left:50%; right:auto; transform:translateX(-50%); height:14px; line-height:14px; }
+    }
     .help-example { border-left:3px solid var(--accent); padding:10px 14px; background:var(--accent-soft); border-radius:0 5px 5px 0; font-size:13px; }
     #help-content .help-score-note { padding-top:16px; border-top:1px solid var(--line); font-size:13px; color:var(--muted); }
     .help-footer { display:flex; flex:none; align-items:center; justify-content:space-between; gap:12px; padding:14px 22px; border-top:1px solid var(--line); }
@@ -648,31 +661,47 @@
     <div id="help-content">
       <section data-help-page="0" aria-labelledby="help-heading-0">
         <h3 id="help-heading-0"><span>①</span> このツールは何？</h3>
-        <p>脚光軸でのカード使用ルートを複数入力し、それぞれの火力を計算・比較できるツールです。</p>
+        <p>センスのカード使用順を試し、複数ルートのスコアを計算・比較するツールです。</p>
+        <ol class="help-flow" aria-label="使う順番">
+          <li><strong>カード定義</strong><span>効果を用意</span></li>
+          <li><strong>局面設定</strong><span>開始時の状態</span></li>
+          <li><strong>ルート設定</strong><span>使う順を指定</span></li>
+          <li><strong>結果・比較</strong><span>スコアを確認</span></li>
+        </ol>
+        <div class="help-example">同じ局面で「集中を上げてから攻撃」と「先に攻撃」を比べ、使用順を検討できます。</div>
       </section>
       <section data-help-page="1" aria-labelledby="help-heading-1" hidden>
         <h3 id="help-heading-1"><span>②</span> カード定義</h3>
-        <p>事前に用意されたカードが登録されています。</p>
-        <ul><li>新しいカードを追加するときは、右上の「＋追加」を押します。</li><li>登録済みのカードは、選択して「編集」から変更できます。</li></ul>
-        <p>編集画面の下部で基本状態とカスタムを選び、「このカスタムを全ルートに適用」を押すと、既存のルートと今後追加するカードに反映されます。</p>
-        <div class="help-example">例：アドリブに「好調7（2カスタム）」を指定すると、ルートに追加するアドリブもその設定になります。</div>
+        <p>カードを選んで「編集」。新しいカードは「＋追加」から登録します。</p>
+        <dl class="help-terms">
+          <dt>基本設定</dt><dd>無印・＋など、カード本体の効果を定義します。</dd>
+          <dt>カスタム</dt><dd>基本状態に重ねる効果の変更を登録します。</dd>
+          <dt>追加時の既定値</dt><dd>全セット共通。これからルートに追加するカードだけに適用します。</dd>
+        </dl>
+        <div class="help-example">アドリブの既定値を「好調7（2カスタム）」にしても、配置済みカードの設定は変わりません。</div>
       </section>
       <section data-help-page="2" aria-labelledby="help-heading-2" hidden>
         <h3 id="help-heading-2"><span>③</span> 局面設定</h3>
-        <p>計算を始める時点の集中・好調・バフなどを入力します。</p>
-        <p>設定した局面は「新規保存」で、このブラウザに保存できます。保存した局面は「局面プリセット」から選び、「読込」で呼び出せます。</p>
+        <p>計算開始時の集中・好調・残りターン・バフを入力します。</p>
+        <dl class="help-terms">
+          <dt>集中強化</dt><dd>集中によるスコア加算を強化します。「集中増加量増加」とは別の効果です。</dd>
+          <dt>このターンに付与</dt><dd>通常、このターン終了時の残りターン減少を保留します。集中強化は同じ残りターンの効果と期間を共有します。</dd>
+        </dl>
+        <div class="help-example">局面・ルート・使用カードの定義は「このセットを保存」で更新。「⋯ → 新規保存」で別のセットとして残せます。</div>
       </section>
       <section data-help-page="3" aria-labelledby="help-heading-3" hidden>
         <h3 id="help-heading-3"><span>④</span> ルート設定</h3>
-        <p>ターンごとに、使用するカードを順番に設定します。</p>
-        <p>複数のルートを作成できるので、どの手順で最も火力が高くなるかを比較できます。</p>
-        <p>計算するターン数は「局面設定」で変更できます。</p>
+        <p>各ターンのカードは上から順に使用します。並べ替えて使用順を調整します。</p>
+        <p>各カードの「設定」で、基本状態・カスタム・追加強化や、その手順だけの効果を指定できます。</p>
+        <div class="help-example">ルートAを「複製」→ 使用順だけ変更してルートBを作成 →「結果・比較」で合計スコアを比較。</div>
+        <p>計算するターン数は「局面設定」で変更します。</p>
       </section>
       <section data-help-page="4" aria-labelledby="help-heading-4" hidden>
         <h3 id="help-heading-4"><span>⑤</span> 結果・比較</h3>
-        <p>ルートごとの各ターンのスコアと、合計スコアを比較できます。</p>
-        <p>カードごとの点数や、計算の詳細も確認できます。</p>
-        <p class="help-score-note">計算結果は、実機のスコアとわずかに異なる場合があります。</p>
+        <p>各ルートの合計とターン別スコアを比較し、選んだルートの詳細を確認できます。</p>
+        <p>「計算ログ」をオンにすると、効果の発動順、集中・好調の変化、脚光や集中強化の状態を確認できます。</p>
+        <div class="help-example">予想より点数が低いときは、ログでカード使用時の集中・好調やバフの残りターンを確認します。</div>
+        <p class="help-score-note">端数処理などにより、計算結果は実機のスコアとわずかに異なる場合があります。</p>
       </section>
     </div>
     <footer class="help-footer"><button id="help-previous" type="button" disabled>← 前へ</button><span id="help-page-number" aria-live="polite" aria-atomic="true">1 / 5</span><button id="help-next" class="primary" type="button">次へ →</button></footer>

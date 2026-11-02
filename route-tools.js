@@ -1,7 +1,7 @@
 const RouteTools = (() => {
   let past = [], future = [], previous, owner, context;
-  const snapshot = () => structuredClone({ routes: state.routes, routeDefaults: state.routeDefaults ?? {}, selectedRouteId: state.selectedRouteId, selectedResultRouteId: state.selectedResultRouteId });
-  const key = s => JSON.stringify([s.routes, s.routeDefaults]);
+  const snapshot = () => structuredClone({ routes: state.routes, selectedRouteId: state.selectedRouteId, selectedResultRouteId: state.selectedResultRouteId });
+  const key = s => JSON.stringify(s.routes);
   const boundary = () => JSON.stringify([state.scenario, state.cards]);
   function sync() {
     const next = snapshot(), nextContext = boundary();
@@ -32,27 +32,20 @@ const RouteTools = (() => {
     recalculateAndSave(true);
   }
   function defaults(id) { return { ...blankConfig(), ...(state.routeDefaults?.[id] ?? {}), enhancement: '' }; }
-  function apply(id, base, custom) {
-    sync();
+  function saveDefaults(id, base, custom) {
     state.routeDefaults ??= {};
     state.routeDefaults[id] = { base, custom };
-    for (const route of state.routes) for (const turn of route.turns) turn.cardIds.forEach((cardId, i) => {
-      if (cardId !== id) return;
-      const config = slotConfig(turn, i);
-      config.base = base; config.custom = custom;
-      delete config.override;
-    });
-    recalculateAndSave(true);
-    setSaveStatus('基本状態・カスタムを全ルートと今後の追加に適用しました');
+    queueSave();
+    setSaveStatus('追加時の既定値を保存しました');
   }
   function controls(card) {
     const box = document.createElement('section'); box.className = 'definition-bulk-row';
     const base = document.createElement('select'), custom = document.createElement('select');
-    base.setAttribute('aria-label', '一括適用する基本状態'); custom.setAttribute('aria-label', '一括適用するカスタム');
+    base.setAttribute('aria-label', '追加時の基本状態'); custom.setAttribute('aria-label', '追加時のカスタム');
     const value = defaults(card.id);
     [['base','未強化'],['plus','＋']].forEach(([id,name]) => base.append(option(id,name,value.base===id)));
     [['','なし'],...card.variants.customs.filter(c=>!c.snapshot).map(c=>[c.id,c.name])].forEach(([id,name])=>custom.append(option(id,name,value.custom===id)));
-    box.append(base,custom,button('このカスタムを全ルートに適用','small primary',()=>apply(card.id,base.value,custom.value)));
+    box.append(base,custom,button('追加時の既定値を保存','small primary',()=>saveDefaults(card.id,base.value,custom.value)));
     return box;
   }
   const save = queueSave;
@@ -69,7 +62,7 @@ const RouteTools = (() => {
   for (const [id,label,action] of [['route-undo','←',()=>travel(true)],['route-redo','→',()=>travel(false)],['routes-clear','全ルートを削除',clear]]) { const b=button(label,'small',action);b.id=id; const description = id === 'route-undo' ? '1手戻る' : id === 'route-redo' ? '1手進む' : label; b.title=description; b.setAttribute('aria-label',description); bar.append(b); }
   $('route-library').before(bar);
   sync(); renderCardEditor();
-  return {sync,travel,clear,apply,defaults};
+  return {sync,travel,clear,saveDefaults,defaults};
 })();
 
 

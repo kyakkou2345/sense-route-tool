@@ -16,7 +16,7 @@
     return { sets: [], selectedId: '' };
   })();
   const baseline = {};
-  const persist = () => { try { localStorage.setItem(KEY, JSON.stringify(store)); return true; } catch { toast('保存に失敗しました(ブラウザの容量不足の可能性)'); return false; } };
+  const persist = (next = store) => { try { localStorage.setItem(KEY, JSON.stringify(next)); return true; } catch { toast('保存に失敗しました(ブラウザの容量不足の可能性)'); return false; } };
   const current = () => store.sets.find((s) => s.id === store.selectedId) ?? null;
 
   function referencedCardIds(scenario, routes) {
@@ -38,6 +38,38 @@
     return structuredClone({ scenario: state.scenario, externalOrder: state.externalOrder, routes: state.routes, cards });
   }
 
+  const normalizeConfig = (value, upgraded) => value
+    ? { ...blankConfig(), ...value }
+    : { ...blankConfig(), base: upgraded ? 'plus' : 'base' };
+
+  // Compare saved content after the same default/legacy normalization used on load.
+  // UI IDs and the ordering of the shared card library are not edits to a set.
+  function signature(data) {
+    const d = structuredClone(data);
+    const scenario = normalizeScenario(d.scenario);
+    const routes = Array.isArray(d.routes) ? d.routes : structuredClone(state.routes);
+    const ids = referencedCardIds(scenario, routes);
+    const definitions = new Map(normalizeCards(makeDefaultCards()).map(card => [card.id, card]));
+    for (const card of getRouteCards()) if (!definitions.has(card.id)) definitions.set(card.id, structuredClone(card));
+    for (const card of (d.cards?.length ? normalizeCards(d.cards) : [])) definitions.set(card.id, card);
+    const cards = [...definitions.values()].filter(card => ids.has(card.id));
+    cards.forEach(ensureVariants);
+    cards.sort((a, b) => a.id.localeCompare(b.id));
+    scenario.carryInCards = scenario.carryInCards.map(({ id, upgraded, config: value, ...entry }) => ({
+      ...entry, config: normalizeConfig(value, upgraded),
+    }));
+    const normalizedRoutes = normalizeRoutes(routes, cards, scenario.remainingTurns).map(({ id, ...route }) => ({
+      ...route,
+      turns: route.turns.map(({ upgraded, configs, ...turn }) => ({
+        ...turn, configs: turn.cardIds.map((_, i) => normalizeConfig(configs?.[i], upgraded?.[i])),
+      })),
+    }));
+    return canon({ scenario, externalOrder: normalizeExternalOrder(d.externalOrder), routes: normalizedRoutes, cards });
+  }
+  function hasChanges(s = current()) {
+    return !s || signature(snapshot()) !== (baseline[s.id] ?? signature(s.data));
+  }
+
   function applyData(d, message) {
     const oldTurns = state.scenario.remainingTurns;
     // Set definitions are private to the working set; never mutate the shared library.
@@ -46,10 +78,14 @@
     for (const card of (d.cards?.length ? normalizeCards(structuredClone(d.cards)) : [])) definitions.set(card.id, card);
     state.setCards = [...definitions.values()];
     state.scenario = normalizeScenario(structuredClone(d.scenario));
+    state.scenario.carryInCards.forEach(entry => { entry.config = normalizeConfig(entry.config, entry.upgraded); });
     state.externalOrder = normalizeExternalOrder(d.externalOrder);
-    if (Array.isArray(d.routes) && d.routes.length) {
+    if (Array.isArray(d.routes)) {
       state.routes = normalizeRoutes(structuredClone(d.routes), getRouteCards(), state.scenario.remainingTurns);
-      state.selectedRouteId = state.selectedResultRouteId = state.routes[0].id;
+      state.routes.forEach(route => route.turns.forEach(turn => {
+        turn.configs = turn.cardIds.map((_, i) => normalizeConfig(turn.configs?.[i], turn.upgraded?.[i]));
+      }));
+      state.selectedRouteId = state.selectedResultRouteId = state.routes[0]?.id ?? null;
     } else if (oldTurns !== state.scenario.remainingTurns) {
       state.routes.forEach((r) => resizeRouteTurns(r, oldTurns, state.scenario.remainingTurns));
     }
@@ -102,8 +138,8 @@
   }
   function updateDirty() {
     const s = current();
-    if (!s || !bar.offsetParent || !s.sig && !baseline[s.id]) { dirty.hidden = true; return; }
-    dirty.hidden = canon(snapshot()) === (baseline[s.id] ?? s.sig);
+    if (!s || !bar.offsetParent) { dirty.hidden = true; return; }
+    dirty.hidden = !hasChanges(s);
   }
   setInterval(() => { if (!document.hidden) updateDirty(); }, 1000);
 
@@ -133,7 +169,7 @@
   let pendingLeave = false;
   async function confirmLeaveCurrent() {
     const s = current();
-    if (s && canon(snapshot()) === (baseline[s.id] ?? s.sig ?? canon(s.data))) return true;
+    if (s && !hasChanges(s)) return true;
     if (pendingLeave) return false;
     pendingLeave = true;
     leaveNote.textContent = s
@@ -147,12 +183,15 @@
       discard.onclick = () => { accepted = true; leaveDialog.close(); };
       saveLeave.onclick = () => {
         if (!s && !name.value.trim()) { leaveError.textContent = 'セット名を入力してください'; return; }
-        const oldStore = structuredClone(store), oldBaseline = s && baseline[s.id];
-        if (s) writeSet(s);
-        else { const added = addSet(name.value.trim(), snapshot()); added.sig = canon(added.data); }
-        if (!persist()) {
-          store = oldStore;
-          if (s && oldBaseline !== undefined) baseline[s.id] = oldBaseline;
+        let saved;
+        if (s) saved = writeSet(s);
+        else {
+          const before = structuredClone(store);
+          const added = addSet(name.value.trim(), snapshot()); added.sig = signature(added.data);
+          saved = persist();
+          if (!saved) store = before;
+        }
+        if (!saved) {
           leaveError.textContent = '保存に失敗しました。切り替えを中止しています。'; return;
         }
         accepted = true; leaveDialog.close();
@@ -170,23 +209,29 @@
     const s = store.sets.find((x) => x.id === id);
     const previousId = store.selectedId;
     const before = snapshot();
-    store.selectedId = id; persist();
+    store.selectedId = id;
+    if (!persist()) { store.selectedId = previousId; renderBar(); return; }
     if (!s) { renderBar(); return; }
     applyData(s.data, `セット「${s.name}」を読み込みました`);
-    baseline[s.id] = canon(snapshot());
+    baseline[s.id] = signature(snapshot());
     renderBar();
     toast(`「${s.name}」を読み込みました`, () => {
       applyData(before, '元に戻しました');
       store.selectedId = previousId; persist(); renderBar();
     });
   }
-  function writeSet(s) { s.data = snapshot(); s.sig = canon(s.data); s.updatedAt = Date.now(); delete baseline[s.id]; }
+  function writeSet(s) {
+    const next = structuredClone(store);
+    const target = next.sets.find(entry => entry.id === s.id);
+    target.data = snapshot(); target.sig = signature(target.data); target.updatedAt = Date.now();
+    if (!persist(next)) return false;
+    store = next; baseline[s.id] = target.sig;
+    return true;
+  }
   function saveCurrent() {
     const s = current();
     if (!s) { openDialog('new'); return; }
-    const before = structuredClone(s), oldBaseline = baseline[s.id];
-    writeSet(s);
-    if (!persist()) { Object.assign(s, before); if (oldBaseline !== undefined) baseline[s.id] = oldBaseline; return; }
+    if (!writeSet(s)) return;
     renderBar(); toast(`「${s.name}」に保存しました`);
   }
   function addSet(name, data) {
@@ -235,10 +280,11 @@
     const before = snapshot();
     const previousId = store.selectedId;
     const name = store.sets.some((s) => s.name === obj.n) ? `${obj.n} (共有)` : obj.n;
+    const previousStore = structuredClone(store);
     const s = addSet(name, obj.d);
-    persist();
+    if (!persist()) { store = previousStore; return false; }
     applyData(s.data, `共有セット「${name}」を追加しました`);
-    s.sig = canon(snapshot()); persist(); renderBar();
+    baseline[s.id] = signature(snapshot()); renderBar();
     toast(`共有セット「${name}」を追加して開きました`, () => {
       applyData(before, '元に戻しました');
       store.sets = store.sets.filter((entry) => entry.id !== s.id);
@@ -268,7 +314,7 @@
       onOk = () => {
         const name = input.value.trim(); if (!name) throw new Error('名前を入力してください');
         const before = structuredClone(store);
-        if (mode === 'new') { const s = addSet(name, snapshot()); s.sig = canon(s.data); }
+        if (mode === 'new') { const s = addSet(name, snapshot()); s.sig = signature(s.data); }
         else current().name = name;
         if (!persist()) { store = before; throw new Error('保存に失敗しました。もう一度お試しください。'); }
         if (mode === 'new') toast(`「${name}」を保存しました`);
