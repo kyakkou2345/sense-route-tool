@@ -1591,8 +1591,21 @@ function calculateScore(calc, base, options = {}) {
   const concRate = options.concRate ?? 1;
   // Common float32 model verified against the accepted vovi route and observed route-share hits.
   // Keep basic concentration and its additional multiplier contribution separate.
-  const buffs = Array.isArray(calc.concScoreBuffs) ? calc.concScoreBuffs : [{value:calc.concScoreBoost??0}];
-  const factor = buffs.reduce((sum,buff)=>Math.fround(sum+Math.fround(buff.value)),Math.fround(1));
+  const buffs = Array.isArray(calc.concScoreBuffs)
+    ? calc.concScoreBuffs
+    : [{ value: calc.concScoreBoost ?? 0, remaining: 0 }];
+  const groups = new Map();
+
+  for (const buff of buffs) {
+    const key = buff.remaining;
+    groups.set(key, (groups.get(key) ?? 0) + buff.value);
+  }
+
+  let factor = Math.fround(1);
+
+  for (const value of groups.values()) {
+    factor = Math.fround(factor + Math.fround(value));
+  }
   const basic = Math.fround(Math.fround(calc.concentration)*factor);
   const extra = Math.fround(Math.fround(Math.fround(calc.concentration)*Math.fround(concRate-1))*factor);
   const step1 = Math.ceil(base)+Math.ceil(basic)+Math.ceil(extra);
