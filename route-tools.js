@@ -64,7 +64,7 @@ const RouteTools = (() => {
   const read = readSavedData;
   readSavedData = function(data) { const result=read(data); result.routeDefaults=structuredClone(data.routeDefaults ?? {}); return result; };
   const editor = renderCardEditor;
-  renderCardEditor = function() { editor(); const card=getCard(state.selectedCardId); if(card) $('card-editor').append(controls(card)); };
+  renderCardEditor = function() { editor(); const card=getLibraryCard(state.selectedCardId); if(card) $('card-editor').append(controls(card)); };
   const bar = document.createElement('div'); bar.className='route-history-toolbar';
   for (const [id,label,action] of [['route-undo','←',()=>travel(true)],['route-redo','→',()=>travel(false)],['routes-clear','全ルートを削除',clear]]) { const b=button(label,'small',action);b.id=id; const description = id === 'route-undo' ? '1手戻る' : id === 'route-redo' ? '1手進む' : label; b.title=description; b.setAttribute('aria-label',description); bar.append(b); }
   $('route-library').before(bar);

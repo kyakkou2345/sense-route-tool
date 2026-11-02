@@ -203,7 +203,7 @@
   simulateRoute = function(route) {
     if (!isAnomaly()) return original.simulateRoute(route);
     const a = state.scenario.anomaly;
-    const calculated = FusionEngine.calculate(state.scenario, state.cards, route, isFusion());
+    const calculated = FusionEngine.calculate(state.scenario, getRouteCards(), route, isFusion());
     return { routeId: route.id, name: route.name, totalScore: calculated.final.score, finalState: calculated.final, turns: route.turns.map((turn, i) => ({ attribute: turn.attribute, score: calculated.totals[i], rows: calculated.rows.filter(r => r.turn === a.turn + i), turn: a.turn + i })), warnings: calculated.warnings };
   };
   original.renderRanking = renderRanking;

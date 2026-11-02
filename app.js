@@ -215,8 +215,17 @@ function button(text, className, onClick) {
   return node;
 }
 
+function getRouteCards() {
+  const overrides = new Map((state.setCards ?? []).map(card => [card.id, card]));
+  return [...state.cards.filter(card => !overrides.has(card.id)), ...overrides.values()];
+}
+
+function getLibraryCard(id) {
+  return state.cards.find(card => card.id === id) ?? null;
+}
+
 function getCard(id) {
-  return state.cards.find((card) => card.id === id) ?? null;
+  return (state.setCards ?? []).find(card => card.id === id) ?? state.cards.find((card) => card.id === id) ?? null;
 }
 
 function getSelectedRoute() {
@@ -456,10 +465,12 @@ function readSavedData(data) {
   if (!Number.isFinite(Number(data.version)) || Number(data.version) < 4) cards = addReservedCardDefaults(cards);
   if (Number(data.version) >= 2 && data.scenario) {
     const scenario = normalizeScenario(data.scenario);
-    const routes = normalizeRoutes(data.routes, cards, scenario.remainingTurns);
+    const setCards = data.setCards?.length ? normalizeCards(data.setCards) : [];
+    const routes = normalizeRoutes(data.routes, [...cards, ...setCards], scenario.remainingTurns);
     const scenePresets = normalizeScenePresets(data.scenePresets);
     return {
       cards,
+      setCards,
       scenario,
       scenePresets,
       routeDefaults: structuredClone(data.routeDefaults ?? {}),
@@ -541,6 +552,7 @@ function collectSaveData() {
     savedAt: new Date().toISOString(),
     cards: structuredClone(state.cards),
     cardLibrary: structuredClone(state.cards),
+    setCards: structuredClone(state.setCards ?? []),
     scenario: structuredClone(state.scenario),
     scenePresets: structuredClone(state.scenePresets),
     routes: structuredClone(state.routes),
@@ -596,7 +608,7 @@ function setSaveStatus(message) {
   $('save-status').textContent = message;
 }
 
-function saveNow(message = '保存しました') {
+function saveNow(message = '作業内容を自動保存済み') {
   if (isRestoring) return;
   clearTimeout(saveTimer);
   try {
@@ -610,7 +622,7 @@ function saveNow(message = '保存しました') {
 function queueSave() {
   if (isRestoring) return;
   clearTimeout(saveTimer);
-  saveTimer = setTimeout(() => saveNow('自動保存'), 180);
+  saveTimer = setTimeout(() => saveNow('作業内容を自動保存済み'), 180);
 }
 
 function restoreState(data) {
@@ -908,7 +920,7 @@ function renderCardLibrary() {
 function renderSelectedCardBar() {
   const bar = $('selected-card-bar');
   bar.textContent = '';
-  const card = getCard(state.selectedCardId);
+  const card = getLibraryCard(state.selectedCardId);
   if (!card) {
     bar.className = 'selected-card-bar empty muted';
     bar.textContent = 'カードを選択してください';
@@ -929,7 +941,7 @@ function renderSelectedCardBar() {
 }
 
 function showCardSubview(view) {
-  cardEditorOpen = view === 'editor' && Boolean(getCard(state.selectedCardId));
+  cardEditorOpen = view === 'editor' && Boolean(getLibraryCard(state.selectedCardId));
   $('card-library-view').classList.toggle('active', !cardEditorOpen);
   $('card-editor-view').classList.toggle('active', cardEditorOpen);
   if (cardEditorOpen) renderCardEditor();
@@ -940,7 +952,7 @@ function renderCardEditor() {
   if (routeEditTarget) { renderRouteCardDialog(); return; }
   const editor = $('card-editor');
   editor.textContent = '';
-  const card = getCard(state.selectedCardId);
+  const card = getLibraryCard(state.selectedCardId);
   if (!card) {
     const empty = document.createElement('p');
     empty.className = 'empty';

@@ -512,7 +512,7 @@
       <div class="button-row">
         <button id="open-help" type="button" aria-label="使い方" aria-haspopup="dialog" aria-controls="help-dialog">？</button>
         <button id="open-data" type="button">保存データ</button>
-        <button id="save-now" class="primary" type="button">保存</button>
+        <button id="save-now" class="primary" type="button" hidden>保存</button>
       </div>
     </header>
 
@@ -613,7 +613,7 @@
           <section class="panel route-workspace">
             <div class="route-toolbar row between">
               <label style="grid-template-columns:auto minmax(140px,280px);align-items:center;">ルート名<input id="route-name" type="text"></label>
-              <div class="row"><span id="route-total-preview" class="score"></span><button id="share-edit-route" class="small" type="button">このルートをコピー</button></div>
+              <div class="row"><span id="route-total-preview" class="score"></span><button id="share-edit-route" hidden style="display:none" class="small" type="button">このルートをコピー</button></div>
             </div>
             <div id="turn-grid" class="turn-grid scroll"></div>
           </section>
@@ -628,7 +628,7 @@
             <div id="ranking"></div>
           </section>
           <section class="panel scroll stack">
-            <div class="panel-header"><h2 id="result-title">ルート詳細</h2><button id="share-result-route" class="small" type="button">このルートをコピー</button><label class="check"><input id="log-detail" type="checkbox">計算ログ</label></div>
+            <div class="panel-header"><h2 id="result-title">ルート詳細</h2><button id="share-result-route" hidden style="display:none" class="small" type="button">このルートをコピー</button><label class="check"><input id="log-detail" type="checkbox">計算ログ</label></div>
             <div id="result-summary" class="metrics"></div>
             <div id="result-detail" class="stack"></div>
           </section>
@@ -638,7 +638,7 @@
 
     <footer class="app-footer">
       <button id="previous-step" type="button">← 前へ</button>
-      <span id="save-status" class="muted">自動保存</span>
+      <span id="save-status" class="muted" role="status">作業内容は自動保存されます</span>
       <button id="next-step" class="primary" type="button">次へ →</button>
     </footer>
   </div>
@@ -679,16 +679,16 @@
   </dialog>
 
   <dialog id="data-dialog">
-    <div class="panel-header"><h2>保存データ</h2><button id="close-data" type="button">閉じる</button></div>
+    <div class="panel-header"><h2>バックアップ</h2><button id="close-data" type="button">閉じる</button></div>
     <div class="button-row">
-      <button id="export-json" class="primary" type="button">JSON書き出し・コピー</button>
-      <button id="export-route" type="button">選択ルートだけコピー</button>
-      <button id="import-json" type="button">JSON読み込み</button>
-      <button id="export-cards" type="button">カード定義だけ書き出し</button>
-      <button id="import-cards" type="button">カード定義だけ読み込み</button>
+      <button id="export-json" class="primary" type="button">バックアップを書き出し</button>
+      <button id="export-route" hidden style="display:none" type="button">選択ルートだけコピー</button>
+      <button id="import-json" type="button">バックアップを読み込み</button>
+      <button id="export-cards" hidden style="display:none" type="button">カード定義だけ書き出し</button>
+      <button id="import-cards" hidden style="display:none" type="button">カード定義だけ読み込み</button>
       <button id="reset-storage" class="danger" type="button">初期値に戻す</button>
     </div>
-    <textarea id="save-json" placeholder="JSON書き出し結果、または読み込みたいJSON"></textarea>
+    <textarea id="save-json" placeholder="書き出した内容、または読み込みたいバックアップ"></textarea>
   </dialog>
 
   <dialog id="route-card-dialog"><div class="panel-header"><h2 id="route-card-title">カード設定</h2><button id="close-route-card" type="button">閉じる</button></div><div id="route-card-content"></div></dialog>
@@ -703,6 +703,7 @@
   <script src="./route-drag.js"></script>
   <script src="./route-help.js"></script>
   <script src="./route-mobile.js"></script>
+  <script src="./route-sets.js"></script>
 </body>
 </html>
 
