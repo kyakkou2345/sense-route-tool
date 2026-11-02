@@ -232,6 +232,21 @@
     .selected-card-title { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 800; }
     .card-editor-nav { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
     .card-editor { height: 100%; }
+    .conc-score-inputs { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:8px 12px; min-width:0; margin:6px 0 0; padding:8px 0 0; border:0; border-top:1px solid var(--line); }
+    .conc-score-inputs legend { padding:0 8px 0 0; font-size:13px; color:var(--text); }
+    .conc-score-slot { display:flex; gap:4px; min-width:0; align-items:center; font-size:13px; }
+    .conc-score-slot > span:first-child { min-width:0; }
+    .conc-score-percent { display:flex; flex:0 0 84px; align-items:center; gap:3px; }
+    .conc-score-percent input { width:100%; min-width:0; }
+    @container(max-width:379px) { .conc-score-inputs { grid-template-columns:minmax(0,1fr); } }
+    [data-attribute="vo"] { --attribute-color:#f28b8b; }
+    [data-attribute="da"] { --attribute-color:#83b9ff; }
+    [data-attribute="vi"] { --attribute-color:#f3d66b; }
+    .attribute-label,.attribute-select,.attribute-select option[data-attribute],.turn-result > summary[data-attribute],.mobile-turn-nav button[data-attribute] { color:var(--attribute-color); }
+    .attribute-label input,.attribute-select { border-color:var(--attribute-color); }
+    .turn-head[data-attribute] { border-top:3px solid var(--attribute-color); }
+    .mobile-turn-nav button[data-attribute][aria-pressed="true"] { border-color:var(--attribute-color); }
+
     .card-editor-content { max-width: 920px; }
     .card-definition-bar { display: grid; grid-template-columns: auto minmax(220px, 1fr) 150px auto; gap: 8px; align-items: center; }
     .effect-group { width: min(720px, 100%); border-top: 1px solid var(--line); padding-top: 8px; }
@@ -592,17 +607,21 @@
               <div class="buff-inputs">
                 <div class="buff-input-row"><span>集中増加量増加</span><label class="buff-percent"><input aria-label="集中増加量増加%" id="initial-conc-gain-boost" type="number" step="5" value="50"><span>%</span></label><label class="buff-duration"><span>残りターン</span><input aria-label="集中増加量増加の残りターン" id="conc-gain-boost-turns" type="number" min="0" max="99" step="1" value="1"></label><label class="buff-fresh"><input id="conc-gain-boost-fresh" type="checkbox">このターンに付与</label></div>
                 <div class="buff-input-row"><span>好調増加量増加</span><label class="buff-percent"><input aria-label="好調増加量増加%" id="initial-good-gain-boost" type="number" min="0" step="10" value="0"><span>%</span></label><label class="buff-duration"><span>残りターン</span><input aria-label="好調増加量増加の残りターン" id="good-gain-boost-turns" type="number" min="0" max="99" step="1" value="1"></label><label class="buff-fresh"><input id="good-gain-boost-fresh" type="checkbox">このターンに付与</label></div>
-                <div class="buff-input-row conc-score-row"><span>集中強化</span><label class="buff-percent"><input aria-label="集中強化1の%" id="initial-conc-score-boost" type="number" min="0" step="5" value="0"><span>%</span></label><label class="buff-duration"><span>残りターン</span><input aria-label="集中強化1の残りターン" id="conc-score-boost-turns" type="number" min="0" max="99" step="1" value="1"></label><label class="buff-fresh"><input id="conc-score-boost-fresh" type="checkbox">このターンに付与</label></div>
-                <div class="buff-input-row conc-score-row"><span>集中強化</span><label class="buff-percent"><input aria-label="集中強化2の%" id="initial-conc-score-boost-2" type="number" min="0" step="5" value="0"><span>%</span></label><label class="buff-duration"><span>残りターン</span><input aria-label="集中強化2の残りターン" id="conc-score-boost-turns-2" type="number" min="0" max="99" step="1" value="1"></label><label class="buff-fresh"><input id="conc-score-boost-fresh-2" type="checkbox">このターンに付与</label></div>
-                <div class="buff-input-row conc-score-row"><span>集中強化</span><label class="buff-percent"><input aria-label="集中強化3の%" id="initial-conc-score-boost-3" type="number" min="0" step="5" value="0"><span>%</span></label><label class="buff-duration"><span>残りターン</span><input aria-label="集中強化3の残りターン" id="conc-score-boost-turns-3" type="number" min="0" max="99" step="1" value="1"></label><label class="buff-fresh"><input id="conc-score-boost-fresh-3" type="checkbox">このターンに付与</label></div>
+                <fieldset class="conc-score-inputs">
+                  <legend>集中強化</legend>
+                  <label class="conc-score-slot"><span>残り1ターン</span><span class="conc-score-percent"><input aria-label="集中強化・残り1ターンの%" id="initial-conc-score-boost" type="number" min="0" step="5" value="0"><span>%</span></span></label>
+                  <label class="conc-score-slot"><span>残り2ターン</span><span class="conc-score-percent"><input aria-label="集中強化・残り2ターンの%" id="initial-conc-score-boost-2" type="number" min="0" step="5" value="0"><span>%</span></span></label>
+                  <label class="conc-score-slot"><span>残り3ターン</span><span class="conc-score-percent"><input aria-label="集中強化・残り3ターンの%" id="initial-conc-score-boost-3" type="number" min="0" step="5" value="0"><span>%</span></span></label>
+                  <label class="conc-score-slot"><span>残り3ターン（このターンに付与）</span><span class="conc-score-percent"><input aria-label="集中強化・残り3ターン（このターンに付与）の%" id="initial-conc-score-boost-3-fresh" type="number" min="0" step="5" value="0"><span>%</span></span></label>
+                </fieldset>
               </div>
               <label class="check"><input id="super-good" type="checkbox" checked>絶好調として計算</label>
             </div>
             <h3>ターン倍率</h3>
             <div class="fields compact">
-              <label>Vo %<input id="vo-multiplier" type="number" step="1" value="4300"></label>
-              <label>Da %<input id="da-multiplier" type="number" step="1" value="4300"></label>
-              <label>Vi %<input id="vi-multiplier" type="number" step="1" value="4300"></label>
+              <label class="attribute-label" data-attribute="vo">Vo %<input id="vo-multiplier" type="number" step="1" value="4300"></label>
+              <label class="attribute-label" data-attribute="da">Da %<input id="da-multiplier" type="number" step="1" value="4300"></label>
+              <label class="attribute-label" data-attribute="vi">Vi %<input id="vi-multiplier" type="number" step="1" value="4300"></label>
             </div>
             <textarea id="scenario-memo" hidden></textarea>
           </section>
@@ -697,7 +716,7 @@
       <section data-help-page="4" aria-labelledby="help-heading-4" hidden>
         <h3 id="help-heading-4"><span>⑤</span> カード管理</h3>
         <p>ルート設定に使用したいカードが設定されていなかった場合、画面上部の「カード管理」から編集、追加できます。</p>
-        <p>ルート設定でのカード追加における既定のカード設定はここで設定できます。</p>
+        <p>ルート設定でのカード追加における既定のカード設定はここでできます。</p>
         <div class="help-example">例）アドリブの既定値を「好調7（2カスタム）」にすると、追加するときに自動的にアドリブ2カスタムになります。</div>
       </section>
     </div>

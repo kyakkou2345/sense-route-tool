@@ -23,12 +23,19 @@ const EXTERNAL_EFFECTS = [
 ];
 const DEFAULT_EXTERNAL_ORDER = EXTERNAL_EFFECTS.filter((effect) => effect.id !== 'natsuya').map((effect) => effect.id);
 
+const CONC_SCORE_SLOTS = [
+  { id: 'initial-conc-score-boost', turns: 1, fresh: false },
+  { id: 'initial-conc-score-boost-2', turns: 2, fresh: false },
+  { id: 'initial-conc-score-boost-3', turns: 3, fresh: false },
+  { id: 'initial-conc-score-boost-3-fresh', turns: 3, fresh: true },
+];
+
 const SCENARIO_INPUT_IDS = [
   'good-gain-boost-fresh',
   'conc-gain-boost-fresh',
-  'conc-score-boost-fresh', 'conc-score-boost-fresh-2', 'conc-score-boost-fresh-3',
+  ...CONC_SCORE_SLOTS.map(slot => slot.id),
   'previous-score', 'remaining-turns', 'initial-concentration', 'initial-good', 'initial-param-boost',
-  'initial-conc-gain-boost', 'conc-gain-boost-turns', 'initial-good-gain-boost', 'good-gain-boost-turns', 'initial-conc-score-boost', 'conc-score-boost-turns', 'initial-conc-score-boost-2', 'conc-score-boost-turns-2', 'initial-conc-score-boost-3', 'conc-score-boost-turns-3', 'super-good',
+  'initial-conc-gain-boost', 'conc-gain-boost-turns', 'initial-good-gain-boost', 'good-gain-boost-turns', 'super-good',
   'vo-multiplier', 'da-multiplier', 'vi-multiplier', 'scenario-memo',
 ];
 
@@ -125,6 +132,7 @@ function defaultScenario() {
     goodGainBoostFresh: false,
     concScoreBoost: 0,
     concScoreBoostTurns: 1,
+    concScoreBoostRows: CONC_SCORE_SLOTS.map(({ turns, fresh }) => ({ percent: 0, turns, fresh })),
     superGood: true,
     multipliers: { vo: 4300, da: 4300, vi: 4300 },
     memo: '',
@@ -151,7 +159,9 @@ function makeRoute(name, remainingTurns = 1) {
 function makeDefaultState() {
   const cards = makeDefaultCards();
   if (typeof INITIAL_TOOL_DEFAULTS !== 'undefined') {
-    return { ...readSavedData({ version: 8, cards, ...structuredClone(INITIAL_TOOL_DEFAULTS) }), cards };
+    const initial = structuredClone(INITIAL_TOOL_DEFAULTS);
+    Object.assign(initial.scenario, { concScoreBoost: 0, concScoreBoostTurns: 1, concScoreBoostRows: defaultScenario().concScoreBoostRows });
+    return { ...readSavedData({ version: 8, cards, ...initial }), cards };
   }
   const route = makeRoute('ルート1', 1);
   route.turns[0].cardIds = ['存在感', '道筋', '情熱ターン', 'シュプ'].map(name => cards.find(c => c.name === name).id);
@@ -696,10 +706,7 @@ function applyScenarioToInputs() {
     'conc-gain-boost-fresh': s.concGainBoostFresh,
     'good-gain-boost-turns': s.goodGainBoostTurns,
     'good-gain-boost-fresh': s.goodGainBoostFresh,
-    ...Object.fromEntries(normalizeConcScoreRows(s).flatMap((row, index) => {
-      const suffix = index === 0 ? '' : '-' + (index + 1);
-      return [['initial-conc-score-boost' + suffix, row.percent], ['conc-score-boost-turns' + suffix, row.turns], ['conc-score-boost-fresh' + suffix, row.fresh]];
-    })),
+    ...concScoreInputValues(s),
     'super-good': s.superGood,
     'vo-multiplier': s.multipliers.vo,
     'da-multiplier': s.multipliers.da,
@@ -748,12 +755,7 @@ function readScenarioFromInputs() {
     concGainBoostFresh: $('conc-gain-boost-fresh').checked,
     goodGainBoostTurns: clampInt($('good-gain-boost-turns').value, 0, 99, 0),
     goodGainBoostFresh: $('good-gain-boost-fresh').checked,
-    concScoreBoostRows: [1, 2, 3].map(index => {
-      const suffix = index === 1 ? '' : '-' + index;
-      return { percent: Math.max(0, number($('initial-conc-score-boost' + suffix).value)), turns: clampInt($('conc-score-boost-turns' + suffix).value, 0, 99, 0), fresh: $('conc-score-boost-fresh' + suffix).checked };
-    }),
-    concScoreBoost: number($('initial-conc-score-boost').value),
-    concScoreBoostTurns: clampInt($('conc-score-boost-turns').value, 0, 99, 0),
+    concScoreBoostRows: readConcScoreInputs(),
     superGood: $('super-good').checked,
     multipliers: {
       vo: number($('vo-multiplier').value),
@@ -1470,13 +1472,19 @@ function renderTurnGrid(route) {
     column.className = 'turn-column';
     const head = document.createElement('div');
     head.className = 'turn-head';
+    head.dataset.attribute = turn.attribute;
     const row = document.createElement('div');
     row.className = 'row between';
     const title = document.createElement('strong');
     title.textContent = `残り${remaining}ターン`;
     const attr = document.createElement('select');
     attr.style.width = '80px';
-    ATTRIBUTES.forEach((id) => attr.append(option(id, ATTRIBUTE_LABELS[id], turn.attribute === id)));
+    attr.className = 'attribute-select';
+    attr.dataset.attribute = turn.attribute;
+    ATTRIBUTES.forEach(id => {
+      const item = option(id, ATTRIBUTE_LABELS[id], turn.attribute === id);
+      item.dataset.attribute = id; attr.append(item);
+    });
     attr.addEventListener('change', () => {
       turn.attribute = attr.value;
       recalculateAndSave(true);
@@ -2052,6 +2060,7 @@ function renderTurnResult(turn) {
   box.className = 'turn-result';
   box.open = true;
   const summary = document.createElement('summary');
+  summary.dataset.attribute = turn.attribute;
   summary.textContent = `残り${turn.remaining}ターン・${ATTRIBUTE_LABELS[turn.attribute]} ${fmt(turn.multiplier)}%　${fmt(turn.score)}（累計 ${fmt(turn.cumulativeScore)}）`;
   const body = document.createElement('div');
   body.className = 'turn-result-body';
@@ -2443,11 +2452,40 @@ function normalizeConcScoreRows(raw = {}) {
   const rows = Array.isArray(raw.concScoreBoostRows) ? raw.concScoreBoostRows : [
     { percent: raw.concScoreBoost ?? 0, turns: raw.concScoreBoostTurns ?? raw.remainingTurns ?? 1 },
   ];
-  return Array.from({ length: 3 }, (_, index) => ({
+  return Array.from({ length: Math.max(4, rows.length) }, (_, index) => ({
     percent: Math.max(0, number(rows[index]?.percent)),
     turns: clampInt(rows[index]?.turns, 0, 99, 1),
     fresh: Boolean(rows[index]?.fresh),
   }));
+}
+
+function concScoreInputValues(scenario) {
+  const rows = normalizeConcScoreRows(scenario);
+  return Object.fromEntries(CONC_SCORE_SLOTS.map(slot => [slot.id,
+    rows.filter(row => row.turns === slot.turns && row.fresh === slot.fresh)
+      .reduce((sum, row) => sum + row.percent, 0),
+  ]));
+}
+
+function readConcScoreInputs() {
+  let rows = normalizeConcScoreRows(state.scenario);
+  for (const slot of CONC_SCORE_SLOTS) {
+    const matches = row => row.turns === slot.turns && row.fresh === slot.fresh;
+    const total = rows.filter(matches).reduce((sum, row) => sum + row.percent, 0);
+    const percent = Math.max(0, number($(slot.id).value));
+    // Keep original rows/order until that total is edited. This preserves legacy
+    // durations/fresh flags and the existing floating-point aggregation order.
+    if (percent === total) continue;
+    let replaced = false;
+    const value = { percent, turns: slot.turns, fresh: slot.fresh };
+    rows = rows.flatMap(row => {
+      if (!matches(row)) return [row];
+      if (replaced) return [];
+      replaced = true; return [value];
+    });
+    if (!replaced) rows.push(value);
+  }
+  return rows;
 }
 
 function migrateSavedData(data) {
