@@ -15,7 +15,7 @@
   label.check { min-height: 44px; }
   button { touch-action: manipulation; }
   #open-help, #close-help { width: 44px; height: 44px; }
-  .stepper { display: grid; grid-template-columns: repeat(4,minmax(0,1fr)); gap: 3px; padding: 6px 8px; }
+  .stepper { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 3px; padding: 6px 8px; }
   .step-arrow { display: none; }
   .step-button { min-width: 0; padding: 8px 2px; font-size: 12px; }
   .screen-area { padding: 8px; }

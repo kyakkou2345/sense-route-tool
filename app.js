@@ -166,7 +166,7 @@ function makeDefaultState() {
     selectedRouteId: route.id,
     selectedResultRouteId: route.id,
     selectedScenePresetId: '',
-    activeStep: 0,
+    activeStep: 1,
     logDetail: false,
   };
 }
@@ -176,6 +176,7 @@ let isRestoring = false;
 let saveTimer = null;
 let latestResults = [];
 let cardEditorOpen = false;
+let cardManagerOpen = false;
 let routeEditTarget = null;
 
 function clampInt(value, min, max, fallback) {
@@ -480,7 +481,7 @@ function readSavedData(data) {
       selectedRouteId: routes.some((route) => route.id === data.ui?.selectedRouteId) ? data.ui.selectedRouteId : routes[0]?.id,
       selectedResultRouteId: routes.some((route) => route.id === data.ui?.selectedResultRouteId) ? data.ui.selectedResultRouteId : routes[0]?.id,
       selectedScenePresetId: scenePresets.some((preset) => preset.id === data.ui?.selectedScenePresetId) ? data.ui.selectedScenePresetId : '',
-      activeStep: clampInt(data.ui?.activeStep, 0, 3, 0),
+      activeStep: clampInt(data.ui?.activeStep, 1, 3, 1),
       logDetail: Boolean(data.ui?.logDetail),
     };
   }
@@ -499,7 +500,7 @@ function readSavedData(data) {
     selectedRouteId: route.id,
     selectedResultRouteId: route.id,
     selectedScenePresetId: '',
-    activeStep: 0,
+    activeStep: 1,
     logDetail: Boolean(data.inputs?.['log-detail']),
   };
 }
@@ -859,20 +860,35 @@ function deleteScenePreset() {
 }
 
 function showStep(index) {
-  state.activeStep = clampInt(index, 0, 3, 0);
+  state.activeStep = clampInt(index, 1, 3, 1);
+  const visibleStep = cardManagerOpen ? 0 : state.activeStep;
   document.querySelectorAll('[data-screen]').forEach((screen) => {
-    screen.classList.toggle('active', Number(screen.dataset.screen) === state.activeStep);
+    screen.classList.toggle('active', Number(screen.dataset.screen) === visibleStep);
   });
   document.querySelectorAll('[data-step]').forEach((step) => {
-    const active = Number(step.dataset.step) === state.activeStep;
+    const active = !cardManagerOpen && Number(step.dataset.step) === state.activeStep;
     step.classList.toggle('active', active);
     step.setAttribute('aria-current', active ? 'step' : 'false');
   });
-  $('previous-step').disabled = state.activeStep === 0;
+  $('previous-step').disabled = state.activeStep === 1;
+  $('previous-step').hidden = $('next-step').hidden = cardManagerOpen;
+  $('open-card-manager').setAttribute('aria-expanded', String(cardManagerOpen));
   $('next-step').disabled = state.activeStep === 3;
-  if (state.activeStep === 2) renderRoutes();
-  if (state.activeStep === 3) renderResults();
+  if (!cardManagerOpen && state.activeStep === 2) renderRoutes();
+  if (!cardManagerOpen && state.activeStep === 3) renderResults();
   queueSave();
+}
+
+function openCardManager() {
+  cardManagerOpen = true;
+  showStep(state.activeStep);
+  $('back-to-main').focus();
+}
+
+function closeCardManager() {
+  cardManagerOpen = false;
+  showStep(state.activeStep);
+  $('open-card-manager').focus();
 }
 
 function getLibraryCards() {
@@ -2136,8 +2152,10 @@ function bindEvents() {
     queueSave();
   });
   document.querySelectorAll('[data-step]').forEach((step) => {
-    step.addEventListener('click', () => showStep(Number(step.dataset.step)));
+    step.addEventListener('click', () => { cardManagerOpen = false; showStep(Number(step.dataset.step)); });
   });
+  $('open-card-manager').addEventListener('click', openCardManager);
+  $('back-to-main').addEventListener('click', closeCardManager);
   $('previous-step').addEventListener('click', () => showStep(state.activeStep - 1));
   $('next-step').addEventListener('click', () => showStep(state.activeStep + 1));
   $('save-now').addEventListener('click', () => saveNow());
@@ -2341,6 +2359,8 @@ if (!loadSavedData()) {
   applyScenarioToInputs();
   renderAll();
 }
+
+showStep(1);
 
 // Merge equal-duration grants within the current turn; keep prior-turn grants separate.
 function shareConcScoreBuffPeriods(buffs) {
