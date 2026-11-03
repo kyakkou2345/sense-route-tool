@@ -1365,7 +1365,7 @@ function renderExternalOrder() {
         state.scenario[id].national = national.checked;
         recalculateAndSave();
       });
-      nationalLabel.append(national, '国民');
+      nationalLabel.append(national, '国民エンタメ');
 
       const enhancedLabel = document.createElement('label');
       const enhanced = document.createElement('input');
@@ -2420,7 +2420,7 @@ function renderKyakkouSettings(list) {
   section.id = 'kyakkou-settings'; section.className = 'stack';
 
   const controls = document.createElement('div'); controls.className = 'fields';
-  for (const [key, text] of [['enabled', '脚光を有効'], ['national', '脚光に国民を適用']]) {
+  for (const [key, text] of [['enabled', '脚光を有効'], ['national', '国民脚光']]) {
     const label = document.createElement('label'); label.className = 'check';
     const input = document.createElement('input'); input.type = 'checkbox'; input.checked = setting[key];
     input.addEventListener('change', () => { state.scenario.kyakkou[key] = input.checked; recalculateAndSave(); });
@@ -2429,10 +2429,10 @@ function renderKyakkouSettings(list) {
   const upgradeLabel = document.createElement('label'); upgradeLabel.textContent = '脚光の強化';
   const upgrade = document.createElement('select'); upgrade.setAttribute('aria-label', '脚光の強化');
   const level = setting.upgradeLevel ?? (setting.enhanced ? 1 : 0);
-  ['無印', '+', '++'].forEach((name, index) => upgrade.append(option(String(index), name, level === index)));
+  ['未強化', '＋', '＋＋'].forEach((name, index) => upgrade.append(option(String(index), name, level === index)));
   upgrade.addEventListener('change', () => { state.scenario.kyakkou.upgradeLevel = Number(upgrade.value); state.scenario.kyakkou.enhanced = state.scenario.kyakkou.upgradeLevel > 0; recalculateAndSave(); });
   upgradeLabel.append(upgrade); controls.append(upgradeLabel);
-  const label = document.createElement('label'); label.textContent = '局面開始時の脚光カウント';
+  const label = document.createElement('label'); label.textContent = '開始時の脚光カウント';
   const count = document.createElement('select'); count.setAttribute('aria-label', label.textContent);
   count.append(option('0', '0：あと2回', setting.count === 0), option('1', '1：あと1回', setting.count === 1));
   count.addEventListener('change', () => { state.scenario.kyakkou.count = Number(count.value); recalculateAndSave(); });

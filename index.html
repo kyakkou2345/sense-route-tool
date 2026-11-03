@@ -630,7 +630,7 @@
             <button id="delete-scene-preset" class="danger" type="button">削除</button>
           </section>
           <section class="panel scroll stack">
-            <div class="panel-header"><h2>開始局面</h2></div>
+            <div class="panel-header"><h2>初期値の設定</h2></div>
             <div class="fields">
               <label>残りターン<input id="remaining-turns" type="number" min="1" max="10" step="1" value="1"></label>
               <label>これまでのスコア<input id="previous-score" type="number" min="0" step="1" value="0"></label>
@@ -638,8 +638,8 @@
               <label>初期好調<input id="initial-good" type="number" step="1" value="74"></label>
               <label>パラメータ上昇量増加%<input id="initial-param-boost" type="number" step="1" value="60"></label>
               <div class="buff-inputs">
-                <div class="buff-input-row"><span>集中増加量増加</span><label class="buff-percent"><input aria-label="集中増加量増加%" id="initial-conc-gain-boost" type="number" step="5" value="50"><span>%</span></label><label class="buff-duration"><span>残りターン</span><input aria-label="集中増加量増加の残りターン" id="conc-gain-boost-turns" type="number" min="0" max="99" step="1" value="1"></label><label class="buff-fresh"><input id="conc-gain-boost-fresh" type="checkbox">同ターン付与</label></div>
-                <div class="buff-input-row"><span>好調増加量増加</span><label class="buff-percent"><input aria-label="好調増加量増加%" id="initial-good-gain-boost" type="number" min="0" step="10" value="0"><span>%</span></label><label class="buff-duration"><span>残りターン</span><input aria-label="好調増加量増加の残りターン" id="good-gain-boost-turns" type="number" min="0" max="99" step="1" value="1"></label><label class="buff-fresh"><input id="good-gain-boost-fresh" type="checkbox">同ターン付与</label></div>
+                <div class="buff-input-row"><span>集中増加量</span><label class="buff-percent"><input aria-label="集中増加量増加%" id="initial-conc-gain-boost" type="number" step="5" value="50"><span>%</span></label><label class="buff-duration"><span>ターン</span><input aria-label="集中増加量増加の残りターン" id="conc-gain-boost-turns" type="number" min="0" max="99" step="1" value="1"></label><label class="buff-fresh"><input id="conc-gain-boost-fresh" type="checkbox">同ターン付与</label></div>
+                <div class="buff-input-row"><span>好調増加量</span><label class="buff-percent"><input aria-label="好調増加量増加%" id="initial-good-gain-boost" type="number" min="0" step="10" value="0"><span>%</span></label><label class="buff-duration"><span>ターン</span><input aria-label="好調増加量増加の残りターン" id="good-gain-boost-turns" type="number" min="0" max="99" step="1" value="1"></label><label class="buff-fresh"><input id="good-gain-boost-fresh" type="checkbox">同ターン付与</label></div>
                 <fieldset class="conc-score-inputs">
                   <legend>集中強化</legend>
                   <label class="conc-score-slot"><span>残り1ターン</span><span class="conc-score-percent"><input aria-label="集中強化・残り1ターンの%" id="initial-conc-score-boost" type="number" min="0" step="5" value="0"><span>%</span></span></label>
@@ -660,9 +660,9 @@
           </section>
 
           <section class="panel scroll stack">
-            <div class="panel-header"><h2>パッシブ・外部効果</h2></div>
+            <div class="panel-header"><h2>外部効果</h2></div>
             <div id="external-order" class="stack"></div>
-            <div class="panel-header"><h3>開始前に使用済み</h3><button id="add-carry-in" class="small" type="button">＋追加</button></div>
+            <div class="panel-header"><h3>予約効果（破竹の勢い等）</h3><button id="add-carry-in" class="small" type="button">＋追加</button></div>
             <div id="carry-in-list" class="stack"></div>
           </section>
         </div>
