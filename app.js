@@ -560,6 +560,7 @@ function collectSaveData() {
   const selectedRoute = getSelectedRoute();
   return {
     version: 8,
+    cardDefaultsRevision: 1,
     savedAt: new Date().toISOString(),
     cards: structuredClone(state.cards),
     cardLibrary: structuredClone(state.cards),
@@ -2533,6 +2534,7 @@ function migrateSavedData(data) {
   if (!loaded.cards.some(card => card.id === 'route-drink:macchiato' || card.name === '厳選初星マキアート')) {
     loaded.cards.push(RouteCardModel.makeCatalog().find(card => card.id === 'route-drink:macchiato'));
   }
+  if (Number(data.cardDefaultsRevision ?? 0) < 1) applyApprovedCardDefaults(loaded);
   return loaded;
 }
 

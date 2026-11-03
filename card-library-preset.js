@@ -672,10 +672,10 @@ const INITIAL_CARD_DEFINITIONS = {
                 "effectId": "9e0efd42-f665-4bce-9ccb-3b6d3509d2f9",
                 "field": "value",
                 "mode": "add",
-                "value": 0
+                "value": 1
               }
             ],
-            "configured": false
+            "configured": true
           },
           {
             "id": "triple",
@@ -685,14 +685,14 @@ const INITIAL_CARD_DEFINITIONS = {
                 "effectId": "9e0efd42-f665-4bce-9ccb-3b6d3509d2f9",
                 "field": "value",
                 "mode": "add",
-                "value": 0
+                "value": 2
               }
             ],
-            "configured": false
+            "configured": true
           }
         ]
       },
-      "note": "好調15以下で集中強化20%（3ターン）。++／+++は集中への加算値を入力してください。元気・体力・ドローは計算対象外です。"
+      "note": "好調15以下で集中強化20%（3ターン）。元気・体力・ドローは計算対象外です。"
     },
     {
       "id": "route-card:始まりの合図",
@@ -1092,8 +1092,15 @@ const INITIAL_CARD_DEFINITIONS = {
           {
             "id": "triple",
             "name": "+++",
-            "patches": [],
-            "configured": false
+            "patches": [
+              {
+                "effectId": "1a8ac174-80df-4bb0-8119-e60084347a56",
+                "field": "value",
+                "mode": "set",
+                "value": 12
+              }
+            ],
+            "configured": true
           }
         ]
       }
@@ -1541,7 +1548,14 @@ const INITIAL_CARD_DEFINITIONS = {
       ],
       "reservedEffects": [],
       "variants": {
-        "plus": [],
+        "plus": [
+          {
+            "effectId": "3e21c4bf-9448-4df3-ac75-01ff7713dbeb",
+            "field": "value",
+            "mode": "set",
+            "value": 40
+          }
+        ],
         "customs": [
           {
             "id": "95f519fc-2308-4ca0-bb64-9d7e7ebd4fa9",
@@ -2049,6 +2063,10 @@ const INITIAL_TOOL_DEFAULTS = {
     "route-card:存在感": {
       "base": "plus",
       "custom": "cost"
+    },
+    "route-card:スポットライト": {
+      "base": "plus",
+      "custom": "good2"
     }
   },
   "scenePresets": [
@@ -2150,3 +2168,42 @@ const INITIAL_TOOL_DEFAULTS = {
     "logDetail": false
   }
 };
+
+// One-time correction of the six approved built-in settings; other edits stay intact.
+function applyApprovedCardDefaults(data, includeDefaults = true) {
+  if (Number(data.cardDefaultsRevision ?? 0) >= 1) return data;
+  const update = card => {
+    const template = INITIAL_CARD_DEFINITIONS.cards.find(item => item.id === card.id);
+    if (!template || !card.variants) return;
+    const replaceValue = (patches, effect, value, mode) => {
+      const remaining = (patches ?? []).filter(p => p.effectId !== effect.id || p.field !== 'value');
+      return [...remaining, { effectId: effect.id, field: 'value', mode, value }];
+    };
+    if (template.name === '立ち位置') {
+      const effect = card.effects.find(e => e.type === 'score');
+      if (effect) card.variants.plus = replaceValue(card.variants.plus, effect, 40, 'set');
+    }
+    if (template.name === '精神統一' || template.name === 'アドリブ') {
+      const effect = card.effects.find(e => e.type === (template.name === '精神統一' ? 'concentration' : 'score'));
+      if (!effect) return;
+      card.variants.enhancements ??= [];
+      const levels = template.name === '精神統一' ? [['double', '++', 1], ['triple', '+++', 2]] : [['triple', '+++', 12]];
+      for (const [id, name, value] of levels) {
+        let variant = card.variants.enhancements.find(item => item.id === id);
+        if (!variant) { variant = { id, name, patches: [] }; card.variants.enhancements.push(variant); }
+        variant.patches = replaceValue(variant.patches, effect, value, template.name === '精神統一' ? 'add' : 'set');
+        variant.configured = true;
+      }
+    }
+  };
+  for (const key of ['cards', 'cardLibrary', 'setCards']) for (const card of data[key] ?? []) update(card);
+  if (includeDefaults) {
+    data.routeDefaults ??= {};
+    for (const name of ['アドリブ', '存在感', 'スポットライト']) {
+      const card = INITIAL_CARD_DEFINITIONS.cards.find(item => item.name === name);
+      data.routeDefaults[card.id] = structuredClone(INITIAL_TOOL_DEFAULTS.routeDefaults[card.id]);
+    }
+  }
+  data.cardDefaultsRevision = 1;
+  return data;
+}
