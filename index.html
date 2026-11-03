@@ -36,6 +36,19 @@
       font-feature-settings: "palt" 1;
     }
 
+    body,
+    button, select, option, label, legend,
+    h1, h2, h3, h4, h5, h6, summary {
+      -webkit-user-select: none;
+      user-select: none;
+    }
+    input, textarea, [contenteditable]:not([contenteditable="false"]),
+    .score, .metric-value, #ranking, #result-detail, .events,
+    .turn-result > summary {
+      -webkit-user-select: text;
+      user-select: text;
+    }
+
     button, input, select, textarea { font: inherit; }
     button {
       border: 1px solid var(--line);

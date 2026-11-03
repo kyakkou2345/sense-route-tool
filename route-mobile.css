@@ -62,7 +62,7 @@
   .buff-input-row .buff-duration { gap: 4px; }
   .buff-duration > span { white-space: normal; font-size: 11px; }
   .buff-input-row .buff-duration input { width: 38px; padding-inline: 2px; }
-  .buff-input-row .buff-fresh { grid-column: 1 / -1; justify-self: end; gap: 6px; min-height: 36px; font-size: 13px; }
+  .buff-input-row .buff-fresh { display: none; }
   .effect-order-item { grid-template-columns: 20px minmax(0,1fr) 36px 36px; padding: 8px; }
   .effect-order-item > .check { grid-column: 2; }
   .effect-order-item > button.icon { grid-row: 1; width: 36px; height: 36px; min-width: 36px; min-height: 36px; padding: 0; display: grid; place-items: center; font-size: 16px; line-height: 1; }
