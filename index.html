@@ -532,6 +532,7 @@
     @media(max-width:480px) { .help-header { padding:12px 16px; } #help-content { padding:20px 16px; } #help-content h3 { font-size:18px; } .help-footer { padding:12px 16px; } }
     </style>
   <link rel="stylesheet" href="./route-mobile.css">
+  <link rel="stylesheet" href="./scene-desktop.css">
 </head>
 <body>
   <div class="app-shell">
@@ -605,14 +606,14 @@
               <label>初期好調<input id="initial-good" type="number" step="1" value="74"></label>
               <label>パラメータ上昇量増加%<input id="initial-param-boost" type="number" step="1" value="60"></label>
               <div class="buff-inputs">
-                <div class="buff-input-row"><span>集中増加量増加</span><label class="buff-percent"><input aria-label="集中増加量増加%" id="initial-conc-gain-boost" type="number" step="5" value="50"><span>%</span></label><label class="buff-duration"><span>残りターン</span><input aria-label="集中増加量増加の残りターン" id="conc-gain-boost-turns" type="number" min="0" max="99" step="1" value="1"></label><label class="buff-fresh"><input id="conc-gain-boost-fresh" type="checkbox">このターンに付与</label></div>
-                <div class="buff-input-row"><span>好調増加量増加</span><label class="buff-percent"><input aria-label="好調増加量増加%" id="initial-good-gain-boost" type="number" min="0" step="10" value="0"><span>%</span></label><label class="buff-duration"><span>残りターン</span><input aria-label="好調増加量増加の残りターン" id="good-gain-boost-turns" type="number" min="0" max="99" step="1" value="1"></label><label class="buff-fresh"><input id="good-gain-boost-fresh" type="checkbox">このターンに付与</label></div>
+                <div class="buff-input-row"><span>集中増加量増加</span><label class="buff-percent"><input aria-label="集中増加量増加%" id="initial-conc-gain-boost" type="number" step="5" value="50"><span>%</span></label><label class="buff-duration"><span>残りターン</span><input aria-label="集中増加量増加の残りターン" id="conc-gain-boost-turns" type="number" min="0" max="99" step="1" value="1"></label><label class="buff-fresh"><input id="conc-gain-boost-fresh" type="checkbox">同ターン付与</label></div>
+                <div class="buff-input-row"><span>好調増加量増加</span><label class="buff-percent"><input aria-label="好調増加量増加%" id="initial-good-gain-boost" type="number" min="0" step="10" value="0"><span>%</span></label><label class="buff-duration"><span>残りターン</span><input aria-label="好調増加量増加の残りターン" id="good-gain-boost-turns" type="number" min="0" max="99" step="1" value="1"></label><label class="buff-fresh"><input id="good-gain-boost-fresh" type="checkbox">同ターン付与</label></div>
                 <fieldset class="conc-score-inputs">
                   <legend>集中強化</legend>
                   <label class="conc-score-slot"><span>残り1ターン</span><span class="conc-score-percent"><input aria-label="集中強化・残り1ターンの%" id="initial-conc-score-boost" type="number" min="0" step="5" value="0"><span>%</span></span></label>
                   <label class="conc-score-slot"><span>残り2ターン</span><span class="conc-score-percent"><input aria-label="集中強化・残り2ターンの%" id="initial-conc-score-boost-2" type="number" min="0" step="5" value="0"><span>%</span></span></label>
                   <label class="conc-score-slot"><span>残り3ターン</span><span class="conc-score-percent"><input aria-label="集中強化・残り3ターンの%" id="initial-conc-score-boost-3" type="number" min="0" step="5" value="0"><span>%</span></span></label>
-                  <label class="conc-score-slot"><span>残り3ターン（このターンに付与）</span><span class="conc-score-percent"><input aria-label="集中強化・残り3ターン（このターンに付与）の%" id="initial-conc-score-boost-3-fresh" type="number" min="0" step="5" value="0"><span>%</span></span></label>
+                  <label class="conc-score-slot"><span>残り3ターン（同ターン付与）</span><span class="conc-score-percent"><input aria-label="集中強化・残り3ターン（同ターン付与）の%" id="initial-conc-score-boost-3-fresh" type="number" min="0" step="5" value="0"><span>%</span></span></label>
                 </fieldset>
               </div>
               <label class="check"><input id="super-good" type="checkbox" checked>絶好調として計算</label>
@@ -751,6 +752,7 @@
   <script src="./route-help.js"></script>
   <script src="./route-mobile.js"></script>
   <script src="./route-sets.js"></script>
+  <script src="./scene-desktop.js"></script>
 </body>
 </html>
 
