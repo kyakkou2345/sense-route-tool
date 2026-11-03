@@ -24,6 +24,17 @@
   .screen-grid.cards, .screen-grid.scene, .screen-grid.routes, .screen-grid.results { grid-template-columns: minmax(0,1fr); grid-template-rows: auto; overflow: visible; }
   .panel { padding: 10px; }
   .panel-header { flex-wrap: wrap; }
+  .screen-grid:is(.scene,.routes,.results) > .panel:not(.set-bar) { border-color:transparent; border-radius:0; background:transparent; box-shadow:none; }
+  .screen-grid:is(.scene,.routes,.results) > .panel + .panel:not(.set-bar) { box-shadow:inset 0 2px var(--line); }
+  .screen-grid:is(.scene,.routes,.results) > .panel > .panel-header h2 { padding-left:9px; border-left:3px solid var(--accent); }
+  .screen-grid.scene > .panel > h3,
+  .screen-grid.scene > .panel > .panel-header h3 { padding-left:9px; border-left:3px solid var(--accent); }
+  .screen-grid.routes .turn-column { border-color:transparent; border-radius:0; background:transparent; box-shadow:inset 0 2px var(--line); }
+  .screen-grid.routes .turn-head { background:transparent; }
+  .screen-grid.results .metric { border-color:transparent; border-radius:0; background:transparent; box-shadow:inset 0 -2px var(--line); }
+  .screen-grid.results .turn-result { border-color:transparent; border-radius:0; box-shadow:inset 0 2px var(--line); }
+  .screen-grid.results .turn-result > summary { background:transparent; }
+
   .card-subview { height: auto; }
   .card-library-view { grid-template-rows: auto auto auto; }
   .library-toolbar { grid-template-columns: minmax(0,1fr) auto; gap: 8px; }
