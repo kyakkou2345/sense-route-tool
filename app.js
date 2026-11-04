@@ -2031,7 +2031,7 @@ function renderRanking() {
   const table = document.createElement('table');
   const head = document.createElement('thead');
   const headRow = document.createElement('tr');
-  ['順位', 'ルート', ...Array.from({ length: state.scenario.remainingTurns }, (_, index) => `${state.scenario.remainingTurns - index}T`), '合計', '最終集中', '最終好調']
+  ['順位', 'ルート名', '合計', '1位との差', ...Array.from({ length: state.scenario.remainingTurns }, (_, index) => `${state.scenario.remainingTurns - index}T`)]
     .forEach((text) => {
       const th = document.createElement('th');
       th.textContent = text;
@@ -2047,16 +2047,17 @@ function renderRanking() {
       renderResults();
       queueSave();
     });
-    const values = [index + 1, result.name, ...result.turns.map((turn) => fmt(turn.score)), fmt(displayedTotal(result)), fmt(result.finalState.concentration, 2), fmt(result.finalState.good, 2)];
+    const total = displayedTotal(result);
+    const difference = total - displayedTotal(sorted[0]);
+    const values = [index + 1, result.name, fmt(total), fmt(difference), ...result.turns.map((turn) => fmt(turn.score))];
     values.forEach((value, cellIndex) => {
       const cell = document.createElement('td');
       cell.textContent = value;
-      const turnIndex = cellIndex - 2;
+      const turnIndex = cellIndex - 4;
       if (highlightBest && turnIndex >= 0 && turnIndex < result.turns.length && result.turns[turnIndex].score === bestTurns[turnIndex]) {
         cell.classList.add('best-score');
       }
-      const totalIndex = 2 + result.turns.length;
-      if (highlightBest && cellIndex === totalIndex && result.totalScore === bestTotal) {
+      if (highlightBest && cellIndex === 2 && result.totalScore === bestTotal) {
         cell.classList.add('best-score');
       }
       row.append(cell);
