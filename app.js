@@ -1767,7 +1767,7 @@ function buildCalcState() {
 
 function getGoodMultiplier(calc, goodRate = 1) {
   if (calc.good <= 0) return 1;
-  // Keep the coefficient in double precision; calculateScore rounds the product to float32.
+  // Compute the coefficient before calculateScore converts it to float32.
   if (!calc.superGood && !calc.superGoodTurns) return 1 + 0.5 * goodRate;
   return 1 + (0.5 + calc.good * 0.1) * goodRate;
 }
@@ -1794,12 +1794,15 @@ function calculateScore(calc, base, options = {}) {
   const basic = Math.fround(Math.fround(calc.concentration)*factor);
   const extra = Math.fround(Math.fround(Math.fround(calc.concentration)*Math.fround(concRate-1))*factor);
   const step1 = Math.ceil(base)+Math.ceil(basic)+Math.ceil(extra);
-  // Empirical float32 stages also reproduce the observed integer-boundary Kyakkou scores.
-  const goodAdjusted = Math.fround(step1 * getGoodMultiplier(calc, options.goodRate ?? 1));
+  const goodMultiplier = Math.fround(getGoodMultiplier(calc, options.goodRate ?? 1));
+  const goodAdjusted = step1 * goodMultiplier;
   const stanceAdjusted = options.stanceMultiplier === undefined
     ? goodAdjusted : Math.fround(goodAdjusted * options.stanceMultiplier);
-  const step2 = Math.ceil(Math.fround(stanceAdjusted * Math.fround(1 + currentParamBoost(calc))));
-  const result = ceilScore(step2 * calc.turnMultiplier);
+  // Start with the permanent multiplier, then add each active bonus in order.
+  let paramMultiplier = 1 + calc.paramBoost;
+  for (const buff of calc.timedParamBoosts) paramMultiplier += buff.value;
+  const step2 = Math.ceil(stanceAdjusted * paramMultiplier);
+  const result = Math.ceil(Math.fround(step2 * Math.fround(calc.turnMultiplier)));
   return { base, concRate, step1, step2, result };
 }
 
