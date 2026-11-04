@@ -98,7 +98,7 @@
   // ---- UI ----
   const style = el('style');
   style.textContent = `.set-bar{grid-column:1/-1;display:flex;flex-wrap:wrap;align-items:center;gap:8px;padding:8px 10px;position:relative}
-.set-bar select{flex:1 1 200px;min-width:0}.set-dirty{font-size:12px;padding:2px 8px;border-radius:10px;background:#fde9c8;color:#6b4300;white-space:nowrap}
+.set-bar select{flex:0 1 28%;min-width:140px;max-width:100%}.set-dirty{font-size:12px;padding:2px 8px;border-radius:10px;background:#fde9c8;color:#6b4300;white-space:nowrap}
 .set-menu{position:absolute;right:10px;top:100%;z-index:30;display:grid;gap:2px;padding:6px;min-width:190px;background:#fff;color:#1c2630;border:1px solid #b8c4cf;border-radius:8px;box-shadow:0 6px 20px rgba(0,0,0,.18)}
 .set-menu button{text-align:left;border:0;background:transparent;color:inherit}.set-menu button:hover{background:#eef3f7}.set-menu .danger{color:#b3261e}
 .set-toast{position:fixed;left:50%;bottom:20px;transform:translateX(-50%);z-index:100;display:flex;gap:12px;align-items:center;max-width:92vw;padding:10px 14px;border-radius:8px;background:#26323d;color:#fff;box-shadow:0 6px 20px rgba(0,0,0,.3)}
@@ -125,7 +125,15 @@
     ['削除', deleteCurrent, 'danger'],
   ];
   const menuButtons = items.map(([label, fn, cls]) => { const b = el('button', label, cls); b.type = 'button'; b.setAttribute('role', 'menuitem'); b.onclick = () => { menu.hidden = true; fn(); }; menu.append(b); return b; });
-  moreBtn.onclick = (e) => { e.stopPropagation(); menu.hidden = !menu.hidden; };
+  moreBtn.onclick = (e) => {
+    e.stopPropagation();
+    menu.hidden = !menu.hidden;
+    if (!menu.hidden) {
+      menu.style.right = 'auto';
+      menu.style.left = Math.max(0, Math.min(moreBtn.offsetLeft + moreBtn.offsetWidth - menu.offsetWidth, bar.clientWidth - menu.offsetWidth)) + 'px';
+      menu.style.top = moreBtn.offsetTop + moreBtn.offsetHeight + 4 + 'px';
+    }
+  };
   document.addEventListener('click', (e) => { if (!menu.contains(e.target)) menu.hidden = true; });
   document.addEventListener('keydown', (e) => { if (e.key === 'Escape') menu.hidden = true; });
 
@@ -134,7 +142,7 @@
     select.append(option('', store.sets.length ? 'セットを選択' : '保存済みなし', !store.selectedId));
     for (const s of store.sets) select.append(option(s.id, s.name, s.id === store.selectedId));
     menuButtons[1].disabled = menuButtons[4].disabled = !current();
-    saveBtn.textContent = current() ? 'このセットを保存' : '新しいセットとして保存';
+    saveBtn.textContent = current() ? 'このセットを保存' : '新規保存';
     updateDirty();
   }
   function updateDirty() {
@@ -310,7 +318,7 @@
   function openDialog(mode, extra) {
     input.hidden = area.hidden = note.hidden = true; err.textContent = ''; okBtn.hidden = false; okBtn.textContent = 'OK';
     if (mode === 'new' || mode === 'rename') {
-      title.textContent = mode === 'new' ? '新しいセットとして保存' : '名前を変更';
+      title.textContent = mode === 'new' ? '新規保存' : '名前を変更';
       input.hidden = false; input.value = mode === 'new' ? `セット${store.sets.length + 1}` : current().name;
       onOk = () => {
         const name = input.value.trim(); if (!name) throw new Error('名前を入力してください');
