@@ -51,7 +51,11 @@
       const tab = document.createElement('button'); tab.type = 'button';
       tab.dataset.attribute = turn.attribute;
       tab.textContent = `残り${remaining}T・${ATTRIBUTE_LABELS[turn.attribute]}`;
-      tab.addEventListener('click', () => selectTurn(turnIndex)); buttons.push(tab); nav.append(tab);
+      tab.addEventListener('click', () => {
+        if (turnIndex === active) return;
+        keepPosition(() => selectTurn(turnIndex));
+      });
+      buttons.push(tab); nav.append(tab);
       const rows = [...columns[turnIndex].querySelectorAll('.card-step')];
       rows.forEach((row, cardIndex) => {
         row.draggable = false;

@@ -15,7 +15,7 @@
   label.check { min-height: 44px; }
   button { touch-action: manipulation; }
   #open-help, #close-help { width: 44px; height: 44px; }
-  .stepper { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 3px; padding: 6px 8px; }
+  .stepper { position:sticky; top:0; z-index:20; display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 3px; padding: 6px 8px; }
   .step-arrow { display: none; }
   .step-button { min-width:0; min-height:48px; padding:10px 4px; font-size:14px; }
   .screen-area { padding: 8px; }
@@ -133,7 +133,8 @@
   .turn-grid, .turn-grid.single-turn { display: grid; grid-template-columns: minmax(0,1fr); height: auto; overflow: visible; padding-bottom: 0; }
   .turn-add { width:calc(50% + 44px); max-width:100%; }
   .turn-column { min-width: 0; grid-template-rows: auto auto auto; }
-  .turn-grid.mobile-turns-ready > .turn-column:not(.mobile-active-turn) { display: none; }
+  .turn-grid.mobile-turns-ready > .turn-column { grid-area:1 / 1; align-self:start; }
+  .turn-grid.mobile-turns-ready > .turn-column:not(.mobile-active-turn) { visibility:hidden; }
   .turn-cards { overflow: visible; }
   .card-step { grid-template-columns: 20px minmax(0,1fr) 52px 44px; padding: 8px; gap: 5px; }
   .card-step-name { white-space: normal; overflow-wrap: anywhere; font-size: 14px; }
