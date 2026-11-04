@@ -1519,7 +1519,10 @@ function renderTurnGrid(route) {
       item.dataset.attribute = id; attr.append(item);
     });
     attr.addEventListener('change', () => {
-      turn.attribute = attr.value;
+      for (const targetRoute of state.routes) {
+        const target = targetRoute.turns[targetRoute.turns.length - remaining];
+        if (target) target.attribute = attr.value;
+      }
       recalculateAndSave(true);
     });
     row.append(title, attr);
@@ -1596,6 +1599,11 @@ function moveRouteCard(turn, from, to) {
 
 function addRoute() {
   const route = makeRoute(`ルート${state.routes.length + 1}`, state.scenario.remainingTurns);
+  const source = getSelectedRoute();
+  route.turns.forEach((turn, index) => {
+    const remaining = route.turns.length - index;
+    turn.attribute = source?.turns[source.turns.length - remaining]?.attribute ?? turn.attribute;
+  });
   state.routes.push(route);
   state.selectedRouteId = route.id;
   state.selectedResultRouteId = route.id;
