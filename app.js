@@ -617,13 +617,7 @@ async function exportSelectedRoute() {
 }
 
 function setSaveStatus(message) {
-  const status = $('save-status');
-  clearTimeout(setSaveStatus.timer);
-  status.textContent = message;
-  status.hidden = /^(作業内容|保存データを復元しました)/.test(message);
-  if (!status.hidden && !/失敗/.test(message)) {
-    setSaveStatus.timer = setTimeout(() => { status.hidden = true; }, 4000);
-  }
+  $('save-status').textContent = message;
 }
 
 function saveNow(message = '作業内容を自動保存済み') {
@@ -879,7 +873,10 @@ function showStep(index) {
     step.classList.toggle('active', active);
     step.setAttribute('aria-current', active ? 'step' : 'false');
   });
+  $('previous-step').disabled = state.activeStep === 1;
+  $('previous-step').hidden = $('next-step').hidden = cardManagerOpen;
   $('open-card-manager').setAttribute('aria-expanded', String(cardManagerOpen));
+  $('next-step').disabled = state.activeStep === 3;
   if (!cardManagerOpen && state.activeStep === 2) renderRoutes();
   if (!cardManagerOpen && state.activeStep === 3) renderResults();
   queueSave();
@@ -2195,6 +2192,8 @@ function bindEvents() {
   });
   $('open-card-manager').addEventListener('click', openCardManager);
   $('back-to-main').addEventListener('click', closeCardManager);
+  $('previous-step').addEventListener('click', () => showStep(state.activeStep - 1));
+  $('next-step').addEventListener('click', () => showStep(state.activeStep + 1));
   $('save-now').addEventListener('click', () => saveNow());
   $('card-search').addEventListener('input', renderCardLibrary);
   $('card-kind-filter').addEventListener('change', renderCardLibrary);
@@ -2447,9 +2446,9 @@ function renderKyakkouSettings(list) {
   ['未強化', '＋', '＋＋'].forEach((name, index) => upgrade.append(option(String(index), name, level === index)));
   upgrade.addEventListener('change', () => { state.scenario.kyakkou.upgradeLevel = Number(upgrade.value); state.scenario.kyakkou.enhanced = state.scenario.kyakkou.upgradeLevel > 0; recalculateAndSave(); });
   upgradeLabel.append(upgrade); controls.append(upgradeLabel);
-  const label = document.createElement('label'); label.textContent = '脚光発動まで';
+  const label = document.createElement('label'); label.textContent = '開始時の脚光カウント';
   const count = document.createElement('select'); count.setAttribute('aria-label', label.textContent);
-  count.append(option('0', 'あと2回', setting.count === 0), option('1', 'あと1回', setting.count === 1));
+  count.append(option('0', '0：あと2回', setting.count === 0), option('1', '1：あと1回', setting.count === 1));
   count.addEventListener('change', () => { state.scenario.kyakkou.count = Number(count.value); recalculateAndSave(); });
   label.append(count); controls.append(label);
   section.append(controls); list.append(section);

@@ -17,7 +17,7 @@
   #open-help, #close-help { width: 44px; height: 44px; }
   .stepper { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 3px; padding: 6px 8px; }
   .step-arrow { display: none; }
-  .step-button { min-width: 0; min-height:48px; padding: 10px 4px; font-size: 14px; }
+  .step-button { min-width: 0; padding: 8px 2px; font-size: 12px; }
   .screen-area { padding: 8px; }
   .screen { height: auto; overflow: visible; }
   .screen-grid { height: auto; min-height: 0; }
@@ -108,6 +108,8 @@
   #ranking table { min-width: max-content; }
   .metrics { grid-template-columns: repeat(2,minmax(0,1fr)); }
   .metric-value { font-size: 16px; overflow-wrap: anywhere; }
+  .app-footer { grid-template-columns: auto minmax(0,1fr) auto; gap: 8px; padding: 10px 8px; padding-bottom: max(10px,env(safe-area-inset-bottom)); }
+  #previous-step, #next-step { min-width: 76px; padding-inline: 8px; font-size: 13px; }
   #save-status { overflow-wrap: anywhere; font-size: 11px; }
   dialog { width: calc(100% - 16px); max-height: calc(100dvh - 16px); padding: 10px; overflow-y: auto; }
   #route-card-dialog { width: calc(100% - 16px); max-height: calc(100dvh - 16px); }

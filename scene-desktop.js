@@ -61,7 +61,7 @@
     enabledLabel.classList.add('pc-scene-hide'); upgradeLabel.classList.add('pc-scene-hide');
     controls.classList.add('pc-kyakkou-controls'); controls.prepend(choices);
     labelText(nationalLabel, '国民脚光', cleanup);
-    labelText(countLabel, '脚光発動まで', cleanup);
+    labelText(countLabel, '開始時の脚光カウント', cleanup);
     cleanup.push(() => {
       choices.remove(); enabledLabel.classList.remove('pc-scene-hide');
       upgradeLabel.classList.remove('pc-scene-hide'); controls.classList.remove('pc-kyakkou-controls');

@@ -11,7 +11,7 @@
   }
   .pc-scene-column { position:relative; display:grid; gap:14px; min-width:0; min-height:0; }
   .pc-scene-column + .pc-scene-column::before { content:""; position:absolute; top:12px; bottom:12px; left:-8px; width:2px; background:var(--line); pointer-events:none; }
-  .pc-scene-column-initial { grid-template-rows:max-content max-content; align-content:start; gap:10px; }
+  .pc-scene-column-initial { grid-template-rows:minmax(0,1fr) 168px; }
   .pc-scene-column-sense { grid-template-rows:212px minmax(154px,1fr) 142px; }
   .pc-scene-column-effects { grid-template-rows:320px minmax(0,1fr); }
   .pc-scene-box {
@@ -23,7 +23,7 @@
   .pc-scene-box h2 { margin:0; padding-left:9px; border-left:3px solid var(--accent); font-size:16px; }
   .pc-scene-body { display:grid; align-content:start; gap:10px; min-height:0; min-width:0; overflow:auto; }
   .pc-scene-basic .fields { display:flex; flex-direction:column; gap:10px; }
-  .pc-scene-basic .fields > label:not(.check) { width:min(100%,300px); display:grid; grid-template-columns:minmax(0,1fr) 110px; align-items:center; gap:10px; min-height:36px; font-size:14px; }
+  .pc-scene-basic .fields > label:not(.check) { display:grid; grid-template-columns:minmax(0,1fr) 110px; align-items:center; gap:10px; min-height:36px; font-size:14px; }
   .pc-scene-basic .fields > label:not(.check) input { height:36px; }
   .pc-scene-basic .fields > label.check { min-height:26px; margin-top:4px; }
   .pc-scene-increases .buff-inputs { grid-template-columns:minmax(0,1fr); gap:8px; }
@@ -41,7 +41,7 @@
   .pc-scene-sr { position:absolute; width:1px; height:1px; padding:0; margin:-1px; overflow:hidden; clip-path:inset(50%); white-space:nowrap; }
   .pc-kyakkou-controls { grid-template-columns:minmax(0,1fr); gap:14px; }
   .pc-kyakkou-controls > label { font-size:14px; }
-  .pc-kyakkou-controls > label:not(.check) { width:min(100%,250px); display:grid; grid-template-columns:minmax(0,1fr) 120px; align-items:center; gap:10px; }
+  .pc-kyakkou-controls > label:not(.check) { display:grid; grid-template-columns:minmax(0,1fr) 120px; align-items:center; gap:10px; }
   .pc-kyakkou-choices { display:flex; flex-wrap:wrap; gap:16px; min-width:0; padding:0; margin:0; border:0; }
   .pc-kyakkou-choices label { font-size:15px; min-height:32px; }
   .pc-scene-concentration .pc-scene-body { container-type:inline-size; }
