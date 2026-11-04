@@ -21,7 +21,7 @@
 
   function referencedCardIds(scenario, routes) {
     const ids = new Set();
-    for (const route of routes ?? []) for (const turn of route.turns ?? []) {
+    for (const route of routes ?? []) for (const turn of [...(route.turns ?? []), ...(route.hiddenTurns ?? [])]) {
       for (const id of turn.cardIds ?? []) ids.add(id);
     }
     for (const entry of scenario?.carryInCards ?? []) ids.add(entry.cardId);
@@ -63,11 +63,13 @@
     scenario.carryInCards = scenario.carryInCards.map(({ id, upgraded, config: value, ...entry }) => ({
       ...entry, config: normalizeConfig(value, upgraded),
     }));
-    const normalizedRoutes = normalizeRoutes(routes, cards, scenario.remainingTurns).map(({ id, ...route }) => ({
+    const normalizeTurn = ({ upgraded, configs, ...turn }) => ({
+      ...turn, configs: turn.cardIds.map((_, i) => normalizeConfig(configs?.[i], upgraded?.[i])),
+    });
+    const normalizedRoutes = normalizeRoutes(routes, cards, scenario.remainingTurns).map(({ id, hiddenTurns, ...route }) => ({
       ...route,
-      turns: route.turns.map(({ upgraded, configs, ...turn }) => ({
-        ...turn, configs: turn.cardIds.map((_, i) => normalizeConfig(configs?.[i], upgraded?.[i])),
-      })),
+      turns: route.turns.map(normalizeTurn),
+      ...(hiddenTurns?.length ? { hiddenTurns: hiddenTurns.map(normalizeTurn) } : {}),
     }));
     return canon({ scenario, externalOrder: normalizeExternalOrder(d.externalOrder), routes: normalizedRoutes, cards });
   }
@@ -82,13 +84,17 @@
     const ids = referencedCardIds(d.scenario, d.routes);
     const definitions = new Map(normalizeCards(makeDefaultCards()).filter(card => ids.has(card.id)).map(card => [card.id, card]));
     for (const card of (d.cards?.length ? normalizeCards(structuredClone(d.cards)) : [])) definitions.set(card.id, card);
+    if (!Array.isArray(d.routes)) {
+      // A scenario-only preset keeps the working routes and their private cards.
+      for (const card of state.setCards ?? []) definitions.set(card.id, card);
+    }
     state.setCards = [...definitions.values()];
     state.scenario = normalizeScenario(structuredClone(d.scenario));
     state.scenario.carryInCards.forEach(entry => { entry.config = normalizeConfig(entry.config, entry.upgraded); });
     state.externalOrder = normalizeExternalOrder(d.externalOrder);
     if (Array.isArray(d.routes)) {
       state.routes = normalizeRoutes(structuredClone(d.routes), getRouteCards(), state.scenario.remainingTurns);
-      state.routes.forEach(route => route.turns.forEach(turn => {
+      state.routes.forEach(route => [...route.turns, ...(route.hiddenTurns ?? [])].forEach(turn => {
         turn.configs = turn.cardIds.map((_, i) => normalizeConfig(turn.configs?.[i], turn.upgraded?.[i]));
       }));
       state.selectedRouteId = state.selectedResultRouteId = state.routes[0]?.id ?? null;

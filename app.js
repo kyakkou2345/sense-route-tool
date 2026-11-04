@@ -455,7 +455,8 @@ function normalizeRoutes(rawRoutes, cards, remainingTurns) {
   if (!Array.isArray(rawRoutes)) return [makeRoute('ルート1', remainingTurns)];
   return rawRoutes.map((raw, routeIndex) => {
     const rawTurns = Array.isArray(raw.turns) ? raw.turns : [];
-    const turns = rawTurns.slice(-remainingTurns).map((turn) => {
+    const savedTurns = [...(Array.isArray(raw.hiddenTurns) ? raw.hiddenTurns : []), ...rawTurns];
+    const turns = savedTurns.map((turn) => {
       const cardIds = normalizeCardIds(turn?.cardIds, cards);
       const rawUpgraded = Array.isArray(turn?.upgraded) ? turn.upgraded : [];
       return {
@@ -465,12 +466,14 @@ function normalizeRoutes(rawRoutes, cards, remainingTurns) {
         configs: cardIds.map((_, index) => turn.configs?.[index] ? structuredClone(turn.configs[index]) : null),
       };
     });
+    const hiddenTurns = turns.splice(0, Math.max(0, turns.length - remainingTurns));
     while (turns.length < remainingTurns) turns.unshift({ attribute: 'vo', cardIds: [], upgraded: [] });
     return {
       id: raw.id || uuid(),
       name: raw.name || `ルート${routeIndex + 1}`,
       memo: raw.memo ?? '',
       turns,
+      ...(hiddenTurns.length ? { hiddenTurns } : {}),
     };
   });
 }
@@ -594,9 +597,9 @@ function collectRouteShareData() {
   const route = state.routes.find(item => item.id === routeId) ?? getSelectedRoute();
   if (!route) throw new Error('書き出すルートがありません。');
   const full = collectSaveData();
-  const ids = new Set(route.turns.flatMap(turn => turn.cardIds));
+  const ids = new Set([...route.turns, ...(route.hiddenTurns ?? [])].flatMap(turn => turn.cardIds));
   for (const entry of full.scenario.carryInCards ?? []) ids.add(entry.cardId);
-  const cards = full.cards.filter(card => ids.has(card.id));
+  const cards = structuredClone(getRouteCards().filter(card => ids.has(card.id)));
   return {
     version: full.version, savedAt: full.savedAt, kind: 'route-share', plan: full.plan ?? 'sense',
     cards, scenario: full.scenario, routes: [structuredClone(route)], externalOrder: full.externalOrder,
@@ -811,9 +814,14 @@ function readScenarioFromInputs() {
 
 function resizeRouteTurns(route, oldCount, newCount) {
   if (newCount > oldCount) {
-    route.turns.unshift(...Array.from({ length: newCount - oldCount }, () => ({ attribute: 'vo', cardIds: [], upgraded: [] })));
+    const addedCount = newCount - oldCount;
+    const restored = route.hiddenTurns?.splice(-addedCount) ?? [];
+    const empty = Array.from({ length: addedCount - restored.length }, () => ({ attribute: 'vo', cardIds: [], upgraded: [] }));
+    route.turns.unshift(...empty, ...restored);
+    if (!route.hiddenTurns?.length) delete route.hiddenTurns;
   } else if (newCount < oldCount) {
-    route.turns.splice(0, oldCount - newCount);
+    const removed = route.turns.splice(0, oldCount - newCount);
+    route.hiddenTurns = [...(route.hiddenTurns ?? []), ...removed];
   }
 }
 
@@ -1072,7 +1080,7 @@ function duplicateCard(card) {
 async function deleteCard(card) {
   if (!await showActionDialog(`「${card.name}」をカード倉庫から削除しますか？\nルート内の同カードも外れます。`)) return;
   state.cards = state.cards.filter((item) => item.id !== card.id);
-  state.routes.forEach((route) => route.turns.forEach((turn) => {
+  state.routes.forEach((route) => [...route.turns, ...(route.hiddenTurns ?? [])].forEach((turn) => {
     const kept = turn.cardIds.map((id, index) => ({ id, upgraded: Boolean(turn.upgraded[index]), config: turn.configs?.[index] }))
       .filter((entry) => entry.id !== card.id);
     turn.cardIds = kept.map((entry) => entry.id);
@@ -2702,7 +2710,7 @@ function migrateSavedData(data) {
     };
     config.custom = ''; config.enhancement = '';
   };
-  loaded.routes.forEach(route => route.turns.forEach(turn => turn.cardIds.forEach((id, index) => convert(id, turn.configs?.[index]))));
+  loaded.routes.forEach(route => [...route.turns, ...(route.hiddenTurns ?? [])].forEach(turn => turn.cardIds.forEach((id, index) => convert(id, turn.configs?.[index]))));
   [loaded.scenario, ...loaded.scenePresets.map(preset => preset.scenario)].forEach(scenario => {
     scenario.carryInCards.forEach(entry => convert(entry.cardId, entry.config));
   });
