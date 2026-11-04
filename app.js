@@ -443,6 +443,10 @@ function normalizeScenario(raw = {}) {
       upgraded: Boolean(item.upgraded),
       config: item.config ? structuredClone(item.config) : undefined,
       usedAtRemaining: clampInt(item.usedAtRemaining, 1, 99, remainingTurns + 1),
+      ...(item.reservedTurns == null ? {} : {
+        reservedTurns: clampInt(item.reservedTurns, 0, 99, 0),
+        skipStartTurn: Boolean(item.skipStartTurn),
+      }),
     })) : [],
   };
 }
@@ -1282,6 +1286,10 @@ function cardHasUpgrade(card) {
   return (card.variants?.plus?.length ?? 0) > 0;
 }
 
+function isHachikuCard(card) {
+  return card?.id === 'd3e1e7b9-88ac-4462-bc6f-fc41697e09ce' || card?.name === '破竹の勢い';
+}
+
 function renderCarryInCards() {
   const list = $('carry-in-list');
   list.textContent = '';
@@ -1307,34 +1315,115 @@ function renderCarryInCards() {
       select.append(option(current.id, `${current.name}（予約効果なし）`, true));
     }
     available.forEach((card) => select.append(option(card.id, card.name, card.id === entry.cardId)));
+    const currentEntry = () => state.scenario.carryInCards.find(item => item.id === entry.id);
     select.addEventListener('change', () => {
+      const entry = currentEntry();
+      if (!entry) return;
       entry.cardId = select.value;
       entry.config = blankConfig();
+      delete entry.reservedTurns;
+      delete entry.skipStartTurn;
       renderCarryInCards();
       recalculateAndSave();
     });
 
-    const upgradeLabel = button('設定', 'small', () => openRouteCardDialog({ entry }));
+    const upgradeLabel = button('設定', 'small', () => {
+      const entry = currentEntry();
+      if (entry) openRouteCardDialog({ entry });
+    });
     const usedLabel = document.createElement('label');
     usedLabel.className = 'carry-turn';
-    usedLabel.textContent = '使用時 残り';
+    const isPerformance = current?.name === '魅惑のパフォーマンス';
+    const useActivationCount = isHachikuCard(current) || isPerformance;
+    const maxActivations = isPerformance ? 2 : useActivationCount ? 4 : 99;
+    const isAchievement = current?.name === '成就';
+    usedLabel.textContent = useActivationCount ? 'あと' : '使用時 残り';
     const used = document.createElement('input');
     used.type = 'number';
     used.min = '1';
-    used.max = '99';
+    used.max = String(maxActivations);
     used.step = '1';
+    const skipLabel = document.createElement('label');
+    const skip = document.createElement('input');
     used.value = entry.usedAtRemaining;
+    if (useActivationCount) {
+      const start = state.scenario.remainingTurns;
+      const card = resolveCard(current, entry.config ?? { base: entry.upgraded ? 'plus' : 'base' });
+      const effect = card?.reservedEffects[0];
+      const first = entry.usedAtRemaining - (effect?.delay ?? 1);
+      const last = first - ((effect?.repeat ?? 1) - 1) * (effect?.interval ?? 1);
+      const firstInRoute = Math.min(first, start);
+      const lastInRoute = Math.max(last, 1);
+      used.value = entry.reservedTurns ?? (firstInRoute >= lastInRoute ? start - lastInRoute + 1 : 0);
+      skip.type = 'checkbox';
+      skip.checked = entry.skipStartTurn ?? (first < start);
+      if (isPerformance && entry.reservedTurns == null) {
+        const inRoute = card.reservedEffects.map(effect => entry.usedAtRemaining - effect.delay)
+          .filter(turn => turn >= 1 && turn <= start);
+        used.value = inRoute.length ? Math.min(2, inRoute.length + Number(skip.checked)) : 0;
+      }
+      skipLabel.className = 'check';
+      skipLabel.append(skip, '開始時ターンを含めない（リプレイ用）');
+      skip.addEventListener('change', () => {
+        const entry = currentEntry();
+        if (!entry) return;
+        entry.reservedTurns = clampInt(used.value, 1, maxActivations, 1);
+        entry.skipStartTurn = skip.checked;
+        recalculateAndSave();
+      });
+    }
     used.addEventListener('input', () => {
-      entry.usedAtRemaining = clampInt(used.value, 1, 99, state.scenario.remainingTurns + 1);
+      const entry = currentEntry();
+      if (!entry) return;
+      if (useActivationCount) {
+        entry.reservedTurns = clampInt(used.value, 1, maxActivations, 1);
+        entry.skipStartTurn = skip.checked;
+      } else {
+        entry.usedAtRemaining = clampInt(used.value, 1, 99, state.scenario.remainingTurns + 1);
+      }
       recalculateAndSave();
     });
     usedLabel.append(used);
+    if (useActivationCount) {
+      used.value = clampInt(used.value, 1, maxActivations, 1);
+      used.addEventListener('change', () => {
+        used.value = clampInt(used.value, 1, maxActivations, 1);
+      });
+      used.setAttribute('aria-label', '発動回数');
+      usedLabel.append('回発動');
+    }
     const remove = button('×', 'small icon danger', () => {
       state.scenario.carryInCards.splice(index, 1);
       renderCarryInCards();
       recalculateAndSave();
     });
-    row.append(select, upgradeLabel, usedLabel, remove);
+    const actions = document.createElement('div');
+    actions.className = 'carry-in-actions';
+    actions.append(upgradeLabel, remove);
+    row.append(select, actions);
+    if (!isAchievement) row.append(usedLabel);
+    if (useActivationCount || isAchievement) {
+      const plusLabel = document.createElement('label');
+      const plus = document.createElement('input');
+      plus.type = 'checkbox';
+      plus.setAttribute('aria-label', current.name + 'を＋にする');
+      plus.checked = entry.config ? entry.config.base === 'plus' : entry.upgraded;
+      plusLabel.className = 'check';
+      plusLabel.append(plus, '+');
+      plus.addEventListener('change', () => {
+        const entry = currentEntry();
+        if (!entry) return;
+        entry.config = { ...blankConfig(), ...entry.config, base: plus.checked ? 'plus' : 'base' };
+        entry.upgraded = plus.checked;
+        recalculateAndSave();
+      });
+      const controls = document.createElement('div');
+      controls.className = 'row';
+      controls.style.gridColumn = '1 / -1';
+      if (useActivationCount) controls.append(skipLabel);
+      controls.append(plusLabel);
+      row.append(controls);
+    }
     list.append(row);
   });
 }
@@ -1835,8 +1924,7 @@ function applyExternalEffect(id, calc, card, events) {
   }
 }
 
-function scheduleReservedEffects(queue, card, usedAtRemaining, upgraded, routeStartRemaining, warnings) {
-  let outsideAfterRoute = 0;
+function scheduleReservedEffects(queue, card, usedAtRemaining, upgraded, routeStartRemaining) {
   card.reservedEffects.forEach((rawEffect) => {
     const effect = resolveEffect(rawEffect, upgraded);
     if (effect.count === 0) return;
@@ -1845,18 +1933,11 @@ function scheduleReservedEffects(queue, card, usedAtRemaining, upgraded, routeSt
     const interval = clampInt(effect.interval, 1, 99, 1);
     for (let index = 0; index < repeat; index += 1) {
       const targetRemaining = usedAtRemaining - delay - index * interval;
-      if (targetRemaining > routeStartRemaining) continue;
-      if (targetRemaining < 1) {
-        outsideAfterRoute += 1;
-        continue;
-      }
+      if (targetRemaining < 1 || targetRemaining > routeStartRemaining) continue;
       if (!queue.has(targetRemaining)) queue.set(targetRemaining, []);
       queue.get(targetRemaining).push({ card, effect: structuredClone(effect) });
     }
   });
-  if (outsideAfterRoute > 0) {
-    warnings.push(`${card.name}: ルート終了後に発動する予約が${outsideAfterRoute}回あります。`);
-  }
 }
 
 function simulateRoute(route) {
@@ -1865,7 +1946,8 @@ function simulateRoute(route) {
   const turns = [];
   const reservedQueue = new Map();
   state.scenario.carryInCards.forEach((entry) => {
-    const card = resolveCard(getCard(entry.cardId), entry.config ?? { base: entry.upgraded ? 'plus' : 'base' });
+    const definition = getCard(entry.cardId);
+    const card = resolveCard(definition, entry.config ?? { base: entry.upgraded ? 'plus' : 'base' });
     if (!card) {
       warnings.push('開始前使用カードに削除済みのカードがあります。');
       return;
@@ -1874,13 +1956,28 @@ function simulateRoute(route) {
       warnings.push(`${card.name}: 予約効果が定義されていません。`);
       return;
     }
+    if (definition.name === '魅惑のパフォーマンス' && entry.reservedTurns != null) {
+      const skip = entry.skipStartTurn ? 1 : 0;
+      card.reservedEffects = card.reservedEffects.filter(effect => effect.delay > skip && effect.delay <= clampInt(entry.reservedTurns, 1, 2, 1));
+      scheduleReservedEffects(reservedQueue, card, route.turns.length + 1, false, route.turns.length);
+      return;
+    }
+    if (isHachikuCard(definition) && entry.reservedTurns != null) {
+      const skip = entry.skipStartTurn ? 1 : 0;
+      const repeat = Math.min(clampInt(entry.reservedTurns, 1, 4, 1), route.turns.length) - skip;
+      if (repeat > 0) {
+        card.reservedEffects = card.reservedEffects.map(effect => ({ ...effect, delay: 1, interval: 1, repeat }));
+        scheduleReservedEffects(reservedQueue, card, route.turns.length + 1 - skip, false, route.turns.length);
+      }
+      return;
+    }
     scheduleReservedEffects(
       reservedQueue,
       card,
-      clampInt(entry.usedAtRemaining, 1, 99, state.scenario.remainingTurns + 1),
+      definition.name === '成就' ? route.turns.length + 1
+        : clampInt(entry.usedAtRemaining, 1, 99, state.scenario.remainingTurns + 1),
       false,
       route.turns.length,
-      warnings,
     );
   });
   route.turns.forEach((turn, turnIndex) => {
@@ -1891,7 +1988,7 @@ function simulateRoute(route) {
     const startEvents = [];
     const beforeReservedScore = calc.score;
     (reservedQueue.get(remaining) ?? []).forEach((entry) => {
-      applyEffect(calc, entry.card, entry.effect, startEvents, false, '（予約）');
+      applyEffect(calc, entry.card, entry.effect, startEvents);
     });
     reservedQueue.delete(remaining);
     const startScore = calc.score - beforeReservedScore;
@@ -1918,7 +2015,7 @@ function simulateRoute(route) {
       state.externalOrder.filter((id) => id !== 'natsuya').forEach((id) => applyExternalEffect(id, calc, card, events));
       applyExternalEffect('natsuya', calc, card, events);
       card.effects.forEach((effect) => applyEffect(calc, card, effect, events, upgraded));
-      scheduleReservedEffects(reservedQueue, card, remaining, upgraded, route.turns.length, warnings);
+      scheduleReservedEffects(reservedQueue, card, remaining, upgraded, route.turns.length);
       applyKyakkou(calc, card, events);
       cards.push({
         index: cardIndex + 1,

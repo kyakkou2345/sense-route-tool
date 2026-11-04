@@ -85,11 +85,8 @@
   .pc-kyakkou-choices { grid-column:1/-1; display:flex; flex-wrap:wrap; gap:16px; margin:0; padding:0; border:0; }
   .pc-external-extras { display:grid; gap:10px; margin-top:12px; padding-top:12px; border-top:1px dashed var(--line); }
   .pc-external-extras > label { display:flex; align-items:center; gap:6px; }
-  .pc-scene-external #external-order .effect-order-item { grid-template-columns:20px minmax(0,1fr) auto 36px 36px; gap:4px; }
-  .pc-scene-external #external-order .effect-order-item > .effect-settings { grid-column:3; grid-row:1; }
-  .pc-scene-external #external-order .effect-order-item > button.icon:nth-last-child(2) { grid-column:4; }
-  .pc-scene-external #external-order .effect-order-item > button.icon:last-child { grid-column:5; }
-  .pc-scene-external #external-order .effect-settings label { display:flex; align-items:center; gap:4px; font-size:12px; white-space:nowrap; }
+  #external-order > .effect-order-item { grid-template-columns: 20px minmax(0,1fr) 36px 36px; gap: 4px; }
+  #external-order > .effect-order-item > .effect-settings:empty { display: none; }
   .scene-passive-row { display:flex; flex-wrap:wrap; align-items:center; gap:8px 16px; }
   .scene-passive-row > label { display:flex; align-items:center; gap:6px; }
 
@@ -113,9 +110,9 @@
   .effect-order-item > button.icon:last-child { grid-column: 4; }
   .effect-order-item > .effect-settings { grid-column: 1 / -1; grid-row: 2; flex-wrap: wrap; }
   .effect-settings { flex-wrap: wrap; }
-  .carry-in-item { grid-template-columns: 64px minmax(0,1fr) 44px; }
-  .carry-in-item > select { grid-column: 1 / -1; width: 100%; min-width: 0; }
-  .carry-in-item .carry-turn { grid-column: 2; }
+  .carry-in-item > select, .carry-in-item .carry-turn input { min-height: 36px; }
+  .carry-in-actions > button.small { min-height: 36px; }
+  .carry-in-item .row label.check { min-height: 32px; }
   .screen-grid.routes > aside { display: flex; flex-direction: column; }
   #route-library { grid-template-columns:repeat(2,minmax(0,1fr)); max-height:160px; overflow-y:auto; }
   .route-history-toolbar { grid-template-columns: 44px 44px minmax(0,1fr); }

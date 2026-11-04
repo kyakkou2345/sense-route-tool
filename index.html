@@ -329,7 +329,13 @@
       padding: 5px 7px;
     }
     .effect-order-item { grid-template-columns: 24px auto minmax(120px, 1fr) auto auto; }
-    .carry-in-item { grid-template-columns: minmax(150px, 1fr) auto 94px auto; }
+    .carry-in-item { grid-template-columns: minmax(0, max-content) max-content; justify-content: start; column-gap: 0; }
+    .carry-in-item > select { grid-area: 1 / 1; margin-inline-end: 5px; field-sizing: content; width: auto; max-width: min(14em, 100%); min-width: 0; }
+    .carry-in-actions { grid-area: 1 / 2; display: flex; align-items: center; justify-self: start; gap: 0; }
+    .carry-in-actions > button { flex: none; white-space: nowrap; }
+    .carry-in-actions > button.danger.icon { width: 30px; }
+    .carry-in-item .carry-turn { grid-column: 1 / -1; display: flex; align-items: center; gap: 4px; justify-self: start; }
+    .carry-in-item .carry-turn input { width: 4em; min-width: 0; }
     .effect-settings { display: flex; align-items: center; gap: 8px; min-width: 0; }
     .effect-settings label { display: flex; align-items: center; gap: 5px; white-space: nowrap; }
     .effect-settings input[type="number"] { width: 64px; }
@@ -437,8 +443,6 @@
       .effect-table-head { display: none; }
       .effect-row { grid-template-columns: repeat(2, minmax(100px, 1fr)); }
       .effect-row .effect-actions { grid-column: 1 / -1; }
-      .carry-in-item { grid-template-columns: minmax(130px, 1fr) auto; }
-      .carry-in-item .carry-turn { grid-column: 1 / 2; }
       .metrics { grid-template-columns: repeat(2, minmax(100px, 1fr)); }
     }
   .variant-section { border-top:1px solid var(--line); padding:12px 0; display:grid; gap:8px; }
@@ -558,8 +562,8 @@
     #help-page-number { color:var(--muted); font-size:13px; font-variant-numeric:tabular-nums; }
     @media(max-width:480px) { .help-header { padding:12px 16px; } #help-content { padding:20px 16px; } #help-content h3 { font-size:18px; } .help-footer { padding:12px 16px; } }
     </style>
-  <link rel="stylesheet" href="./route-mobile.css?v=bdd73150997b">
-  <link rel="stylesheet" href="./scene-desktop.css?v=b67369198c6e">
+  <link rel="stylesheet" href="./route-mobile.css?v=b2c2526c8059">
+  <link rel="stylesheet" href="./scene-desktop.css?v=80ee073c3221">
 </head>
 <body>
   <div class="app-shell">
@@ -768,7 +772,7 @@
   <script src="./route-card-model.js?v=ddb67d4d04a9"></script>
   <script src="./route-card-editor.js?v=ea06d3e8f623"></script>
   <script src="./card-library-preset.js?v=d82c231df1e5"></script>
-  <script src="./app.js?v=6f670c8bedcc"></script>
+  <script src="./app.js?v=9ab566e4486d"></script>
   <script src="./anomaly.js?v=6e0df6622546"></script>
   <script src="./fusion-engine.js?v=521ab2c55eb9"></script>
   <script src="./integration.js?v=2fa826bd7c34"></script>
