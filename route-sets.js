@@ -35,7 +35,7 @@
     // currently shared card library and future changes to default definitions.
     const ids = referencedCardIds(state.scenario, state.routes);
     const cards = getRouteCards().filter((card) => ids.has(card.id));
-    return structuredClone({ cardDefaultsRevision: 1, scenario: state.scenario, externalOrder: state.externalOrder, routes: state.routes, cards });
+    return structuredClone({ cardDefaultsRevision: SCORE_CARD_DEFAULTS_REVISION, scenario: state.scenario, externalOrder: state.externalOrder, routes: state.routes, cards });
   }
 
   const normalizeConfig = (value, upgraded) => value
@@ -44,8 +44,13 @@
 
   // Compare saved content after the same default/legacy normalization used on load.
   // UI IDs and the ordering of the shared card library are not edits to a set.
+  function migrateSetCardDefaults(data) {
+    const copy = applyApprovedCardDefaults(structuredClone(data), false);
+    return applyScoreCardDefaults(copy, data.cardDefaultsRevision);
+  }
+
   function signature(data) {
-    const d = applyApprovedCardDefaults(structuredClone(data), false);
+    const d = migrateSetCardDefaults(data);
     const scenario = normalizeScenario(d.scenario);
     const routes = Array.isArray(d.routes) ? d.routes : structuredClone(state.routes);
     const ids = referencedCardIds(scenario, routes);
@@ -71,7 +76,7 @@
   }
 
   function applyData(d, message) {
-    d = applyApprovedCardDefaults(structuredClone(d), false);
+    d = migrateSetCardDefaults(d);
     const oldTurns = state.scenario.remainingTurns;
     // Set definitions are private to the working set; never mutate the shared library.
     const ids = referencedCardIds(d.scenario, d.routes);
@@ -377,8 +382,8 @@
   }
   let corrected = false;
   for (const set of store.sets) {
-    if (set.data && Number(set.data.cardDefaultsRevision ?? 0) < 1) {
-      set.data = applyApprovedCardDefaults(structuredClone(set.data), false);
+    if (set.data && Number(set.data.cardDefaultsRevision ?? 0) < SCORE_CARD_DEFAULTS_REVISION) {
+      set.data = migrateSetCardDefaults(set.data);
       corrected = true;
     }
   }

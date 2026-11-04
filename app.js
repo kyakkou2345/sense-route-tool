@@ -11,6 +11,7 @@ const EFFECT_TYPES = [
   { value: 'goodScore', label: '好調の%分パラメータ' },
   { value: 'concentration', label: '集中+' },
   { value: 'good', label: '好調+' },
+  { value: 'superGood', label: '絶好調ターン増減' },
   { value: 'paramBoost', label: 'パラメ増加%+' },
   { value: 'concGainBoost', label: '集中増加%+' },
   { value: 'concScoreBoost', label: '集中強化%+' },
@@ -60,7 +61,7 @@ function makeReservedEffect(overrides = {}) {
 }
 
 function makeDefaultCards() {
-  if (typeof INITIAL_CARD_DEFINITIONS !== 'undefined') return structuredClone(INITIAL_CARD_DEFINITIONS.cards);
+  if (typeof INITIAL_CARD_DEFINITIONS !== 'undefined') return applyScoreCardDefaults({ cards: structuredClone(INITIAL_CARD_DEFINITIONS.cards) }).cards;
   const cards = [
     {
       id: uuid(), name: '存在感', kind: 'mental', ljReaction: true, preEffects: [],
@@ -560,7 +561,7 @@ function collectSaveData() {
   const selectedRoute = getSelectedRoute();
   return {
     version: 8,
-    cardDefaultsRevision: 1,
+    cardDefaultsRevision: SCORE_CARD_DEFAULTS_REVISION,
     savedAt: new Date().toISOString(),
     cards: structuredClone(state.cards),
     cardLibrary: structuredClone(state.cards),
@@ -1462,7 +1463,7 @@ function renderRoutes() {
     item.tabIndex = 0;
     const name = document.createElement('span');
     name.textContent = route.name;
-    const total = latestResults.find((result) => result.routeId === route.id)?.totalScore ?? 0;
+    const total = displayedTotal(latestResults.find((result) => result.routeId === route.id));
     const score = document.createElement('span');
     score.className = 'score';
     score.textContent = fmt(total);
@@ -1489,7 +1490,7 @@ function renderRoutes() {
   $('turn-grid').style.setProperty('--turn-capacity', route.turns.length <= 4 ? 4 : 5);
   $('turn-grid').classList.toggle('single-turn', route.turns.length === 1);
   renderTurnGrid(route);
-  const total = latestResults.find((result) => result.routeId === route.id)?.totalScore ?? 0;
+  const total = displayedTotal(latestResults.find((result) => result.routeId === route.id));
   $('route-total-preview').textContent = `現在の合計 ${fmt(total)}`;
   $('delete-route').disabled = state.routes.length <= 1;
 }
@@ -1658,6 +1659,9 @@ function buildCalcState() {
     concScoreBuffs,
     turnMultiplier: 1,
     superGood: s.superGood,
+    superGoodTurns: 0,
+    superGoodFresh: false,
+    timedParamBoosts: [],
     score: 0,
     natsuyaRemaining: Math.max(1, Math.floor(s.natsuya.remaining)),
     kyakkouCount: s.kyakkou.count,
@@ -1667,7 +1671,7 @@ function buildCalcState() {
 function getGoodMultiplier(calc, goodRate = 1) {
   if (calc.good <= 0) return 1;
   // Keep the coefficient in double precision; calculateScore rounds the product to float32.
-  if (!calc.superGood) return 1 + 0.5 * goodRate;
+  if (!calc.superGood && !calc.superGoodTurns) return 1 + 0.5 * goodRate;
   return 1 + (0.5 + calc.good * 0.1) * goodRate;
 }
 
@@ -1697,7 +1701,7 @@ function calculateScore(calc, base, options = {}) {
   const goodAdjusted = Math.fround(step1 * getGoodMultiplier(calc, options.goodRate ?? 1));
   const stanceAdjusted = options.stanceMultiplier === undefined
     ? goodAdjusted : Math.fround(goodAdjusted * options.stanceMultiplier);
-  const step2 = Math.ceil(Math.fround(stanceAdjusted * Math.fround(1 + calc.paramBoost)));
+  const step2 = Math.ceil(Math.fround(stanceAdjusted * Math.fround(1 + currentParamBoost(calc))));
   const result = ceilScore(step2 * calc.turnMultiplier);
   return { base, concRate, step1, step2, result };
 }
@@ -1736,6 +1740,10 @@ function resolveEffect(effect, upgraded = false) {
   };
 }
 
+function currentParamBoost(calc) {
+  return calc.timedParamBoosts.reduce((total, buff) => total + buff.value, calc.paramBoost);
+}
+
 function applyEffect(calc, card, rawEffect, events, upgraded = false, sourceSuffix = '') {
   const effect = resolveEffect(rawEffect, upgraded);
   if (effect.count === 0) return;
@@ -1770,9 +1778,17 @@ function applyEffect(calc, card, rawEffect, events, upgraded = false, sourceSuff
       if (calc.good !== before) events.push(`${source} 好調 ${fmt(before, 2)} → ${fmt(calc.good, 2)}`);
       break;
     }
+    case 'superGood': {
+      const before = calc.superGoodTurns;
+      calc.superGoodTurns = Math.max(0, before + value);
+      if (!before && calc.superGoodTurns) calc.superGoodFresh = true;
+      if (before !== calc.superGoodTurns) events.push(source + ' 絶好調 ' + before + ' → ' + calc.superGoodTurns);
+      break;
+    }
     case 'paramBoost':
-      calc.paramBoost += value / 100;
-      events.push(`${source} パラメータ上昇量増加 ${signed(value, '%')} → ${fmt(calc.paramBoost * 100, 2)}%`);
+      if (effect.duration > 0) calc.timedParamBoosts.push({ value: value / 100, remaining: effect.duration, fresh: true });
+      else calc.paramBoost += value / 100;
+      events.push(`${source} パラメータ上昇量増加 ${signed(value, '%')} → ${fmt(currentParamBoost(calc) * 100, 2)}%`);
       break;
     case 'concGainBoost':
       calc.concGainBoost += value / 100;
@@ -1912,7 +1928,7 @@ function simulateRoute(route) {
         cumulativeScore: calc.score,
         concentration: calc.concentration,
         good: calc.good,
-        paramBoost: calc.paramBoost,
+        paramBoost: currentParamBoost(calc),
         concGainBoost: calc.concGainBoost,
         concScoreBoost: calc.concScoreBoost,
         concScoreBuffs: structuredClone(calc.concScoreBuffs),
@@ -1932,6 +1948,13 @@ function simulateRoute(route) {
       addConcentration(calc, endEvents, 2, '天真爛漫');
     }
     endConcScoreBuffTurn(calc);
+    if (!calc.superGoodFresh) calc.superGoodTurns = Math.max(0, calc.superGoodTurns - 1);
+    calc.superGoodFresh = false;
+    calc.timedParamBoosts = calc.timedParamBoosts.filter(buff => {
+      if (!buff.fresh) buff.remaining--;
+      buff.fresh = false;
+      return buff.remaining > 0;
+    });
     const goodBeforeEnd = calc.good;
     if (!calc.goodFresh) calc.good = Math.max(0, calc.good - 1);
     endInitialGainBoostTurn(calc);
@@ -1956,7 +1979,7 @@ function simulateRoute(route) {
         goodGainBoost: calc.goodGainBoost,
         goodGainBoostRemaining: calc.goodGainBoostRemaining,
         concGainBoostRemaining: calc.concGainBoostRemaining,
-        paramBoost: calc.paramBoost,
+        paramBoost: currentParamBoost(calc),
         concGainBoost: calc.concGainBoost,
         concScoreBoost: calc.concScoreBoost,
         concScoreBuffs: structuredClone(calc.concScoreBuffs),
@@ -1971,7 +1994,7 @@ function simulateRoute(route) {
       kyakkouCount: calc.kyakkouCount,
       concentration: calc.concentration,
       good: calc.good,
-      paramBoost: calc.paramBoost,
+      paramBoost: currentParamBoost(calc),
       concGainBoost: calc.concGainBoost,
       concScoreBoost: calc.concScoreBoost,
     },
@@ -1996,17 +2019,21 @@ function updateRouteScores() {
   document.querySelectorAll('.route-name-item').forEach((item) => {
     const result = latestResults.find((entry) => entry.routeId === item.dataset.routeId);
     const score = item.querySelector('.score');
-    if (score) score.textContent = fmt(result?.totalScore ?? 0);
+    if (score) score.textContent = fmt(displayedTotal(result));
   });
   const selected = getSelectedRoute();
   if (selected) {
     const result = latestResults.find((entry) => entry.routeId === selected.id);
-    $('route-total-preview').textContent = `現在の合計 ${fmt(result?.totalScore ?? 0)}`;
+    $('route-total-preview').textContent = `現在の合計 ${fmt(displayedTotal(result))}`;
   }
 }
 
+function displayedCumulativeScore(score) {
+  return score + (state.scenario.showFinalScore ? state.scenario.previousScore : 0);
+}
+
 function displayedTotal(result) {
-  return result.totalScore + (state.scenario.showFinalScore ? state.scenario.previousScore : 0);
+  return displayedCumulativeScore(result?.totalScore ?? 0);
 }
 
 function renderResults() {
@@ -2114,7 +2141,7 @@ function renderTurnResult(turn) {
   box.open = true;
   const summary = document.createElement('summary');
   summary.dataset.attribute = turn.attribute;
-  summary.textContent = `残り${turn.remaining}ターン・${ATTRIBUTE_LABELS[turn.attribute]} ${fmt(turn.multiplier)}%　${fmt(turn.score)}（累計 ${fmt(turn.cumulativeScore)}）`;
+  summary.textContent = `残り${turn.remaining}ターン・${ATTRIBUTE_LABELS[turn.attribute]} ${fmt(turn.multiplier)}%　${fmt(turn.score)}（累計 ${fmt(displayedCumulativeScore(turn.cumulativeScore))}）`;
   const body = document.createElement('div');
   body.className = 'turn-result-body';
   if (turn.cards.length === 0 && turn.startEvents.length === 0) {
@@ -2135,7 +2162,7 @@ function renderTurnResult(turn) {
     const tbody = document.createElement('tbody');
     if (turn.startScore !== 0 || turn.startEvents.some(event => !event.startsWith('開始時の集中強化:'))) {
       const startRow = document.createElement('tr');
-      ['—', 'ターン開始時予約', fmt(turn.startScore), fmt(turn.startState.cumulativeScore), fmt(turn.startState.concentration, 2), fmt(turn.startState.good, 2)]
+      ['—', 'ターン開始時予約', fmt(turn.startScore), fmt(displayedCumulativeScore(turn.startState.cumulativeScore)), fmt(turn.startState.concentration, 2), fmt(turn.startState.good, 2)]
         .forEach((value) => {
           const td = document.createElement('td');
           td.textContent = value;
@@ -2160,7 +2187,7 @@ function renderTurnResult(turn) {
     }
     turn.cards.forEach((card) => {
       const row = document.createElement('tr');
-      [card.index, card.name, fmt(card.deltaScore), fmt(card.cumulativeScore), fmt(card.concentration, 2), fmt(card.good, 2)]
+      [card.index, card.name, fmt(card.deltaScore), fmt(displayedCumulativeScore(card.cumulativeScore)), fmt(card.concentration, 2), fmt(card.good, 2)]
         .forEach((value) => {
           const td = document.createElement('td');
           td.textContent = value;
@@ -2215,24 +2242,25 @@ function renderAll() {
 
 function bindEvents() {
   let selectOnClick = null;
-  const editableNumber = target => target instanceof HTMLInputElement
-    && target.type === 'number' && !target.disabled && !target.readOnly;
+  const selectableInput = target => target instanceof HTMLInputElement
+    && (target.type === 'number' || target.id === 'route-name') && !target.disabled && !target.readOnly;
   document.addEventListener('pointerdown', ({ target }) => {
-    selectOnClick = editableNumber(target) && document.activeElement !== target ? target : null;
+    selectOnClick = selectableInput(target) && document.activeElement !== target ? target : null;
   }, true);
   document.addEventListener('focusin', ({ target }) => {
-    if (editableNumber(target)) target.select();
+    if (selectableInput(target)) target.select();
   }, true);
   document.addEventListener('click', ({ target }) => {
     const input = selectOnClick;
     selectOnClick = null;
     // Restore selection after the first click/tap places its caret.
-    if (target === input && editableNumber(input) && document.activeElement === input) input.select();
+    if (target === input && selectableInput(input) && document.activeElement === input) input.select();
   }, true);
 
   $('show-final-score').addEventListener('change', () => {
     state.scenario.showFinalScore = $('show-final-score').checked;
     renderResults();
+    updateRouteScores();
     queueSave();
   });
   document.querySelectorAll('[data-step]').forEach((step) => {
@@ -2594,7 +2622,7 @@ function migrateSavedData(data) {
     loaded.cards.push(RouteCardModel.makeCatalog().find(card => card.id === 'route-drink:macchiato'));
   }
   if (Number(data.cardDefaultsRevision ?? 0) < 1) applyApprovedCardDefaults(loaded);
-  return loaded;
+  return applyScoreCardDefaults(loaded, data.cardDefaultsRevision);
 }
 
 function ceilScore(value) {

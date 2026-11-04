@@ -2207,3 +2207,73 @@ function applyApprovedCardDefaults(data, includeDefaults = true) {
   data.cardDefaultsRevision = 1;
   return data;
 }
+
+const SCORE_CARD_DEFAULTS_REVISION = 2;
+
+function applyScoreCardDefaults(data, revision = data.cardDefaultsRevision) {
+  if (Number(revision ?? 0) >= SCORE_CARD_DEFAULTS_REVISION) return data;
+  const updates = {
+    '存在感': [null, { concentration: 7 }],
+    'シュプ': [null, { score: 16 }],
+    '情熱ターン': [{ score: 19 }, { score: 19 }],
+    '道筋': [{ concentration: 10 }, { concentration: 11 }],
+    '破竹の勢い': [{ concentration: 9, score: 7 }, { concentration: 10, score: 7 }],
+    '魅惑のパフォーマンス': [{ score: 56 }, { score: 65 }],
+    '成就': [{ score: 44 }, { score: 46 }],
+    '立ち位置': [{ score: 45 }, { score: 48 }],
+    '話題沸騰': [null, { score: 60, goodRate: 3.5 }],
+  };
+  const matches = (actual, expected) => actual.length === expected.length &&
+    actual.every((patch, index) => ['effectId', 'field', 'mode', 'value']
+      .every(key => patch[key] === expected[index][key]));
+  for (const key of ['cards', 'cardLibrary', 'setCards']) {
+    for (const card of new Set(data[key] ?? [])) {
+      const template = INITIAL_CARD_DEFINITIONS.cards.find(item => item.id === card.id);
+      if (!template || !Object.hasOwn(updates, template.name) || !card.variants) continue;
+      const effects = [...(card.effects ?? []), ...(card.reservedEffects ?? [])];
+      const defaults = [...template.effects, ...template.reservedEffects];
+      const effectFor = type => {
+        const original = defaults.find(effect => effect.type === type);
+        return effects.find(effect => effect.id === original?.id && effect.type === type);
+      };
+      const patch = (effectId, field, value) => ({ effectId, field, mode: 'set', value });
+      if (template.name === '話題沸騰') {
+        const score = effectFor('score');
+        if (score?.value === 50 && score.goodRate === 2.5 && !card.variants.plus.length) {
+          score.value = 37;
+          score.goodRate = 2;
+          card.variants.plus = [patch(score.id, 'value', 50), patch(score.id, 'goodRate', 2.5)];
+        }
+        const boost = effectFor('paramBoost');
+        if (boost?.value === 30 && boost.duration == null) boost.duration = 1;
+        card.preEffects ??= [];
+        if (!card.preEffects.some(effect => effect.type === 'superGood')) {
+          const cost = { id: template.id + ':superGoodCost', type: 'superGood', value: -1, count: 1 };
+          card.preEffects.push(cost);
+          card.variants.customs ??= [];
+          if (!card.variants.customs.some(custom => custom.id === 'superGoodCost')) {
+            card.variants.customs.push({ id: 'superGoodCost', name: '絶好調消費0', patches: [patch(cost.id, 'value', 0)] });
+          }
+        }
+      }
+      if (template.name === '魅惑のパフォーマンス' && !effects.some(effect => effect.type === 'superGood')) {
+        const grant = { id: template.id + ':superGood', type: 'superGood', value: 3, count: 1 };
+        card.effects.unshift(grant);
+        card.variants.plus.push(patch(grant.id, 'value', 4));
+      }
+      updates[template.name].forEach((values, index) => {
+        if (!values) return;
+        const oldVariant = template.variants.enhancements[index];
+        const variant = card.variants.enhancements.find(item => item.id === oldVariant.id);
+        if (!variant || variant.configured !== oldVariant.configured || !matches(variant.patches, oldVariant.patches)) return;
+        const patches = Object.entries(values).map(([type, value]) => {
+          const effect = effectFor(type === 'goodRate' ? 'score' : type);
+          return effect && patch(effect.id, type === 'goodRate' ? 'goodRate' : 'value', value);
+        });
+        if (patches.every(Boolean)) Object.assign(variant, { configured: true, patches });
+      });
+    }
+  }
+  data.cardDefaultsRevision = SCORE_CARD_DEFAULTS_REVISION;
+  return data;
+}

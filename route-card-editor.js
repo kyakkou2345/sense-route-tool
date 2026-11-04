@@ -78,10 +78,10 @@ function renderVariants(card, types, changed) {
       row.append(el('strong',types.find(t=>t.value===effect.type)?.label??effect.type));
       const fields=[['value','効果量']];
       if(['score','goodScore'].includes(effect.type))fields.push(['count','回数'],['concRate','集中倍率'],['goodRate','好調倍率']);
-      if(effect.type==='concScoreBoost')fields.push(['duration','持続ターン']);
+      if(['concScoreBoost','paramBoost'].includes(effect.type))fields.push(['duration','持続ターン']);
       if(key==='reservedEffects')fields.push(['delay','何ターン後'],['repeat','発動回数'],['interval','間隔']);
       for(const [field,labelText]of fields){
-        const label=el('label',labelText),input=el('input');input.type='number';input.step='1';input.value=effect[field]??(field==='duration'?3:0);
+        const label=el('label',labelText),input=el('input');input.type='number';input.step='1';input.value=effect[field]??(field==='duration'&&effect.type==='concScoreBoost'?3:0);
         input.setAttribute('aria-label',title+' '+(types.find(t=>t.value===effect.type)?.label??effect.type)+' '+labelText);
         input.addEventListener('change',()=>{writeDefinitionValue(card,group,config,effect.id,field,Number(input.value)||0);changed();});
         label.append(input);row.append(label);
