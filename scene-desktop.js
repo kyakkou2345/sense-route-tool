@@ -1,6 +1,5 @@
-// PC-only layout. Existing input nodes and their state are retained on mobile.
+// Responsive scene layout. Reuse the existing input nodes and event handlers.
 (() => {
-  const desktop = window.matchMedia('(min-width: 601px)');
   const scene = document.querySelector('.screen-grid.scene');
   if (!scene) return;
   const basicFields = $('initial-concentration').closest('.fields');
@@ -61,7 +60,7 @@
     enabledLabel.classList.add('pc-scene-hide'); upgradeLabel.classList.add('pc-scene-hide');
     controls.classList.add('pc-kyakkou-controls'); controls.prepend(choices);
     labelText(nationalLabel, '国民脚光', cleanup);
-    labelText(countLabel, '開始時の脚光カウント', cleanup);
+    labelText(countLabel, '脚光発動まで', cleanup);
     cleanup.push(() => {
       choices.remove(); enabledLabel.classList.remove('pc-scene-hide');
       upgradeLabel.classList.remove('pc-scene-hide'); controls.classList.remove('pc-kyakkou-controls');
@@ -72,6 +71,7 @@
     dynamic.cleanup.reverse().forEach(undo => undo());
     dynamic.settings.prepend(dynamic.national);
     dynamic.row.append(dynamic.tenshin, dynamic.macchiato);
+    boxes.externalExtras.querySelector('.scene-passive-row')?.remove();
     external.append(dynamic.summer, dynamic.row, dynamic.kyakkou);
     dynamic = null;
   }
@@ -89,7 +89,9 @@
     dynamic = {settings, national, summer, row, tenshin, macchiato, kyakkou, cleanup};
     labelText(national, '国民エンタメ', cleanup);
     labelText(enhanced, '強化済み', cleanup);
-    boxes.externalExtras.append(national, summer, tenshin, macchiato);
+    const passiveRow = document.createElement('div'); passiveRow.className = 'scene-passive-row';
+    passiveRow.append(tenshin, macchiato);
+    boxes.externalExtras.append(national, summer, passiveRow);
     boxes.kyakkou.body.append(kyakkou); row.remove();
     configureKyakkou(kyakkou, cleanup);
   }
@@ -125,15 +127,6 @@
     scene.classList.add('pc-scene-enabled'); scene.append(layout);
     arrangeDynamic();
   }
-  function deactivate() {
-    if (!active) return;
-    restoreDynamic();
-    staticCleanup.reverse().forEach(undo => undo()); staticCleanup = [];
-    anchors.reverse().forEach(({node, anchor}) => anchor.replaceWith(node)); anchors = [];
-    originals.forEach(node => node.classList.remove('pc-scene-original'));
-    scene.classList.remove('pc-scene-enabled'); layout.remove();
-    layout = boxes = null; active = false;
-  }
   const render = renderExternalOrder;
   renderExternalOrder = function() {
     if (active) restoreDynamic();
@@ -141,6 +134,5 @@
     if (active) arrangeDynamic();
     return result;
   };
-  desktop.addEventListener('change', () => desktop.matches ? activate() : deactivate());
-  if (desktop.matches) activate();
+  activate();
 })();

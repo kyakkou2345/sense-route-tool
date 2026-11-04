@@ -616,8 +616,42 @@ async function exportSelectedRoute() {
   } catch (error) { setSaveStatus('ルート書き出し失敗: ' + error.message); }
 }
 
+function showActionDialog(message, initialValue) {
+  if (document.getElementById('action-dialog')) return Promise.resolve(initialValue === undefined ? false : null);
+  return new Promise(resolve => {
+    const dialog = document.createElement('dialog'); dialog.id = 'action-dialog';
+    const title = document.createElement('h2'); title.textContent = '確認';
+    const text = document.createElement('p'); text.textContent = message; text.style.whiteSpace = 'pre-line';
+    const actions = document.createElement('div'); actions.className = 'button-row'; actions.style.justifyContent = 'flex-end';
+    const cancel = button('キャンセル', '', () => dialog.close('cancel'));
+    const ok = button('OK', 'primary', () => dialog.close('ok'));
+    let input;
+    dialog.append(title, text);
+    if (initialValue !== undefined) {
+      input = document.createElement('input'); input.type = 'text'; input.value = initialValue;
+      input.setAttribute('aria-label', message); input.style.width = '100%';
+      input.addEventListener('keydown', event => { if (event.key === 'Enter' && !event.isComposing) { event.preventDefault(); dialog.close('ok'); } });
+      dialog.append(input);
+    }
+    actions.append(cancel, ok); dialog.append(actions);
+    dialog.addEventListener('close', () => {
+      const accepted = dialog.returnValue === 'ok';
+      const result = input ? (accepted ? input.value : null) : accepted;
+      dialog.remove(); resolve(result);
+    }, {once:true});
+    document.body.append(dialog); dialog.showModal();
+    if (input) { input.focus(); input.select(); } else cancel.focus();
+  });
+}
+
 function setSaveStatus(message) {
-  $('save-status').textContent = message;
+  const status = $('save-status');
+  clearTimeout(setSaveStatus.timer);
+  status.textContent = message;
+  status.hidden = /^(作業内容|保存データを復元しました)/.test(message);
+  if (!status.hidden && !/失敗/.test(message)) {
+    setSaveStatus.timer = setTimeout(() => { status.hidden = true; }, 4000);
+  }
 }
 
 function saveNow(message = '作業内容を自動保存済み') {
@@ -805,13 +839,13 @@ function scenePresetSnapshot(name, id = uuid()) {
   };
 }
 
-function saveNewScenePreset() {
+async function saveNewScenePreset() {
   const suggested = `局面${state.scenePresets.length + 1}`;
-  const name = prompt('プリセット名', suggested)?.trim();
+  const name = (await showActionDialog('プリセット名', suggested))?.trim();
   if (!name) return;
   const sameName = state.scenePresets.find((preset) => preset.name === name);
   if (sameName) {
-    if (!confirm(`「${name}」を上書きしますか？`)) return;
+    if (!await showActionDialog(`「${name}」を上書きしますか？`)) return;
     const index = state.scenePresets.indexOf(sameName);
     state.scenePresets[index] = scenePresetSnapshot(name, sameName.id);
     state.selectedScenePresetId = sameName.id;
@@ -833,14 +867,14 @@ function overwriteScenePreset() {
   saveNow('プリセットを上書きしました');
 }
 
-function loadScenePreset() {
+async function loadScenePreset() {
   const preset = getSelectedScenePreset();
   if (!preset) return;
   const oldTurnCount = state.scenario.remainingTurns;
   const nextScenario = normalizeScenario(structuredClone(preset.scenario));
   if (oldTurnCount !== nextScenario.remainingTurns) {
     const message = `残りターンを${oldTurnCount}から${nextScenario.remainingTurns}へ変更します。ルートのターン数も調整しますか？`;
-    if (!confirm(message)) return;
+    if (!await showActionDialog(message)) return;
     state.routes.forEach((route) => resizeRouteTurns(route, oldTurnCount, nextScenario.remainingTurns));
   }
   state.scenario = nextScenario;
@@ -853,9 +887,9 @@ function loadScenePreset() {
   saveNow('プリセットを読み込みました');
 }
 
-function deleteScenePreset() {
+async function deleteScenePreset() {
   const preset = getSelectedScenePreset();
-  if (!preset || !confirm(`「${preset.name}」を削除しますか？`)) return;
+  if (!preset || !await showActionDialog(`「${preset.name}」を削除しますか？`)) return;
   state.scenePresets = state.scenePresets.filter((item) => item.id !== preset.id);
   state.selectedScenePresetId = '';
   renderScenePresets();
@@ -873,10 +907,7 @@ function showStep(index) {
     step.classList.toggle('active', active);
     step.setAttribute('aria-current', active ? 'step' : 'false');
   });
-  $('previous-step').disabled = state.activeStep === 1;
-  $('previous-step').hidden = $('next-step').hidden = cardManagerOpen;
   $('open-card-manager').setAttribute('aria-expanded', String(cardManagerOpen));
-  $('next-step').disabled = state.activeStep === 3;
   if (!cardManagerOpen && state.activeStep === 2) renderRoutes();
   if (!cardManagerOpen && state.activeStep === 3) renderResults();
   queueSave();
@@ -1033,8 +1064,8 @@ function duplicateCard(card) {
   renderCardsAndRoutes();
 }
 
-function deleteCard(card) {
-  if (!confirm(`「${card.name}」をカード倉庫から削除しますか？\nルート内の同カードも外れます。`)) return;
+async function deleteCard(card) {
+  if (!await showActionDialog(`「${card.name}」をカード倉庫から削除しますか？\nルート内の同カードも外れます。`)) return;
   state.cards = state.cards.filter((item) => item.id !== card.id);
   state.routes.forEach((route) => route.turns.forEach((turn) => {
     const kept = turn.cardIds.map((id, index) => ({ id, upgraded: Boolean(turn.upgraded[index]), config: turn.configs?.[index] }))
@@ -1455,6 +1486,7 @@ function renderRoutes() {
   }
   $('route-name').value = route.name;
   $('turn-grid').style.setProperty('--turn-count', route.turns.length);
+  $('turn-grid').style.setProperty('--turn-capacity', route.turns.length <= 4 ? 4 : 5);
   $('turn-grid').classList.toggle('single-turn', route.turns.length === 1);
   renderTurnGrid(route);
   const total = latestResults.find((result) => result.routeId === route.id)?.totalScore ?? 0;
@@ -1500,8 +1532,15 @@ function renderTurnGrid(route) {
     addRow.className = 'turn-add';
     const cardSelect = document.createElement('select');
     if (getLibraryCards().length === 0) cardSelect.append(option('', 'カード倉庫が空です', true));
-    getLibraryCards().forEach((card) => cardSelect.append(option(card.id, card.name)));
-    const add = button('追加', 'small primary', () => {
+    const additionOrder = ['存在感', 'シュプ', '精神統一', 'アドリブ', 'スリリング', 'スポットライト', 'ブエキ', 'センブリ', 'ビタミンドリンク', '仕切り（アイドル宣言）'];
+    const priority = card => {
+      const name = ['仕切り', 'アイドル宣言'].includes(card.name) ? '仕切り（アイドル宣言）' : card.name;
+      const index = additionOrder.indexOf(name);
+      return index < 0 ? additionOrder.length : index;
+    };
+    [...getLibraryCards()].sort((a, b) => priority(a) - priority(b))
+      .forEach((card) => cardSelect.append(option(card.id, card.name)));
+    const add = button('＋追加する', 'small primary', () => {
       if (!cardSelect.value) return;
       turn.cardIds.push(cardSelect.value);
       turn.upgraded.push(false);
@@ -1575,10 +1614,10 @@ function duplicateRoute() {
   recalculateAndSave(true);
 }
 
-function deleteRoute() {
+async function deleteRoute() {
   const route = getSelectedRoute();
   if (!route || state.routes.length <= 1) return;
-  if (!confirm(`「${route.name}」を削除しますか？`)) return;
+  if (!await showActionDialog(`「${route.name}」を削除しますか？`)) return;
   state.routes = state.routes.filter((item) => item.id !== route.id);
   state.selectedRouteId = state.routes[0]?.id;
   if (state.selectedResultRouteId === route.id) state.selectedResultRouteId = state.routes[0]?.id;
@@ -2192,8 +2231,6 @@ function bindEvents() {
   });
   $('open-card-manager').addEventListener('click', openCardManager);
   $('back-to-main').addEventListener('click', closeCardManager);
-  $('previous-step').addEventListener('click', () => showStep(state.activeStep - 1));
-  $('next-step').addEventListener('click', () => showStep(state.activeStep + 1));
   $('save-now').addEventListener('click', () => saveNow());
   $('card-search').addEventListener('input', renderCardLibrary);
   $('card-kind-filter').addEventListener('change', renderCardLibrary);
@@ -2296,8 +2333,8 @@ function bindEvents() {
       setSaveStatus(`JSON読込失敗: ${error.message}`);
     }
   });
-  $('reset-storage').addEventListener('click', () => {
-    if (!confirm('保存データを初期値に戻しますか？')) return;
+  $('reset-storage').addEventListener('click', async () => {
+    if (!await showActionDialog('保存データを初期値に戻しますか？')) return;
     localStorage.removeItem(STORAGE_KEY);
     state = makeDefaultState();
     applyScenarioToInputs();
@@ -2446,9 +2483,9 @@ function renderKyakkouSettings(list) {
   ['未強化', '＋', '＋＋'].forEach((name, index) => upgrade.append(option(String(index), name, level === index)));
   upgrade.addEventListener('change', () => { state.scenario.kyakkou.upgradeLevel = Number(upgrade.value); state.scenario.kyakkou.enhanced = state.scenario.kyakkou.upgradeLevel > 0; recalculateAndSave(); });
   upgradeLabel.append(upgrade); controls.append(upgradeLabel);
-  const label = document.createElement('label'); label.textContent = '開始時の脚光カウント';
+  const label = document.createElement('label'); label.textContent = '脚光発動まで';
   const count = document.createElement('select'); count.setAttribute('aria-label', label.textContent);
-  count.append(option('0', '0：あと2回', setting.count === 0), option('1', '1：あと1回', setting.count === 1));
+  count.append(option('0', 'あと2回', setting.count === 0), option('1', 'あと1回', setting.count === 1));
   count.addEventListener('change', () => { state.scenario.kyakkou.count = Number(count.value); recalculateAndSave(); });
   label.append(count); controls.append(label);
   section.append(controls); list.append(section);

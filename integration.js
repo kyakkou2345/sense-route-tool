@@ -25,7 +25,13 @@
   passivePanel.append(passive);
   function sceneVisibility() {
     mode.value = plan;
-    document.querySelector('h1').textContent = isFusion() ? 'アノ×センス計算ツール' : isAnomaly() ? 'アノマリー計算ツール' : 'センス計算ツール';
+    const title = document.querySelector('h1');
+    if (isAnomaly()) title.textContent = isFusion() ? 'アノ×センス計算ツール' : 'アノマリー計算ツール';
+    else {
+      const sense = el('span', 'センス', 'brand-sense');
+      const description = el('span', 'ルート別計算機', 'brand-description');
+      title.replaceChildren(sense, description);
+    }
     senseFields.forEach(n => n.hidden = isAnomaly());
     if (isFusion()) [$('initial-concentration'), $('initial-good'), $('super-good')].forEach(n => n.parentElement.hidden = false);
     EFFECT_TYPES.splice(0, EFFECT_TYPES.length, ...senseEffectTypes, ...(isAnomaly() ? FusionEngine.TYPES : []));

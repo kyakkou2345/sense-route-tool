@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>センス計算ツール</title>
+  <title>センスルート別計算機</title>
   <style>
     :root {
       color-scheme: dark;
@@ -84,7 +84,7 @@
     .app-shell {
       height: 100dvh;
       display: grid;
-      grid-template-rows: auto auto minmax(0, 1fr) auto;
+      grid-template-rows: auto auto minmax(0, 1fr);
     }
     .app-header {
       display: flex;
@@ -96,6 +96,8 @@
       background: var(--chrome);
     }
     .title-wrap { min-width: 0; }
+    .brand-sense { color:var(--accent); font-weight:800; }
+    .brand-description { color:var(--text); font-weight:600; }
     h1 { margin: 0; font-size: clamp(18px, 2vw, 23px); font-weight: 800; letter-spacing: .02em; }
 
     .stepper {
@@ -113,10 +115,12 @@
       border: 0;
       border-bottom: 2px solid transparent;
       border-radius: 0;
-      padding: 3px 5px;
+      min-width:160px;
+      min-height:48px;
+      padding:10px 20px;
       background: transparent;
       color: var(--muted);
-      font-size: 13px;
+      font-size:16px;
     }
     .step-button.active {
       border-bottom-color: var(--accent);
@@ -330,13 +334,15 @@
     .effect-settings label { display: flex; align-items: center; gap: 5px; white-space: nowrap; }
     .effect-settings input[type="number"] { width: 64px; }
     .route-name-item { grid-template-columns: minmax(0, 1fr) auto; cursor: pointer; }
+    #duplicate-route, #delete-route { min-height:44px; min-width:88px; padding:8px 16px; font-size:14px; }
     .route-name-item.active { border-color: var(--accent); background: var(--accent-soft); }
 
     .route-workspace { display: grid; grid-template-rows: auto minmax(0, 1fr); overflow: hidden; }
     .route-toolbar { margin-bottom: 8px; flex-wrap: wrap; }
     .turn-grid {
       display: grid;
-      grid-template-columns: repeat(var(--turn-count, 1), minmax(230px, 1fr));
+      grid-template-columns: repeat(var(--turn-count, 1), max(230px, calc((100% - (var(--turn-capacity, 4) - 1) * 8px) / var(--turn-capacity, 4))));
+      justify-content:start;
       gap: 8px;
       min-width: 0;
       width: 100%;
@@ -344,7 +350,6 @@
       overflow-x: auto;
       padding-bottom: 8px;
     }
-    .turn-grid.single-turn { grid-template-columns: minmax(320px, 520px); }
     .turn-grid.single-turn .turn-column { width: 100%; }
     .turn-column {
       width: 100%;
@@ -381,19 +386,8 @@
     .turn-result-body { padding: 7px; overflow-x: auto; }
     .events { margin: 4px 0 0; padding-left: 18px; color: var(--muted); font-size: 12px; }
 
-    .app-footer {
-      display: grid;
-      grid-template-columns: 1fr auto 1fr;
-      align-items: center;
-      gap: 10px;
-      padding: 7px 12px;
-      border-top: 1px solid var(--line);
-      background: var(--chrome);
-    }
-    #next-step { justify-self: end; }
-    #previous-step { justify-self: start; }
-    #previous-step, #next-step { width: auto; min-width: 92px; }
-    #save-status { text-align: center; }
+    #save-status { position:fixed; bottom:16px; left:50%; transform:translateX(-50%); z-index:100; max-width:calc(100% - 24px); padding:10px 16px; border:1px solid var(--line-strong); border-radius:6px; background:var(--chrome); color:var(--text); text-align:center; overflow-wrap:anywhere; }
+    #save-status[hidden] { display:none; }
 
     dialog {
       width: min(760px, calc(100% - 24px));
@@ -404,6 +398,7 @@
       background: var(--panel);
       color: var(--text);
     }
+    #action-dialog { width:min(360px,calc(100% - 24px)); }
     dialog::backdrop { background: #101210cc; }
     dialog textarea { min-height: 260px; font: 11px ui-monospace, Consolas, monospace; }
 
@@ -428,7 +423,7 @@
 
     @media (max-width: 900px) {
       body { overflow: auto; }
-      .app-shell { min-height: 100dvh; height: auto; grid-template-rows: auto auto minmax(650px, 1fr) auto; }
+      .app-shell { min-height: 100dvh; height: auto; grid-template-rows: auto auto minmax(650px, 1fr); }
       .screen-grid.cards, .screen-grid.scene, .screen-grid.routes, .screen-grid.results { grid-template-columns: 1fr; overflow: auto; }
       .screen-grid.scene { grid-template-rows: auto auto auto; }
       .scene-preset-bar { grid-column: auto; grid-template-columns: 1fr 1fr; }
@@ -563,14 +558,14 @@
     #help-page-number { color:var(--muted); font-size:13px; font-variant-numeric:tabular-nums; }
     @media(max-width:480px) { .help-header { padding:12px 16px; } #help-content { padding:20px 16px; } #help-content h3 { font-size:18px; } .help-footer { padding:12px 16px; } }
     </style>
-  <link rel="stylesheet" href="./route-mobile.css">
-  <link rel="stylesheet" href="./scene-desktop.css">
+  <link rel="stylesheet" href="./route-mobile.css?v=bcd7528e1659">
+  <link rel="stylesheet" href="./scene-desktop.css?v=b67369198c6e">
 </head>
 <body>
   <div class="app-shell">
     <header class="app-header">
       <div class="title-wrap">
-        <h1>センス計算ツール</h1>
+        <h1><span class="brand-sense">センス</span><span class="brand-description">ルート別計算機</span></h1>
       </div>
       <div class="button-row">
         <button id="open-help" type="button" aria-label="使い方" aria-haspopup="dialog" aria-controls="help-dialog">？</button>
@@ -671,7 +666,7 @@
       <section class="screen" data-screen="2" aria-label="ルート設定">
         <div class="screen-grid routes">
           <aside class="panel stack">
-            <div class="panel-header"><h2>ルート</h2><button id="add-route" class="primary small" type="button">＋追加</button></div>
+            <div class="panel-header"><h2>ルート</h2><button id="add-route" class="primary small" type="button">＋追加する</button></div>
             <div id="route-library" class="stack scroll"></div>
             <div class="button-row">
               <button id="duplicate-route" class="small" type="button">複製</button>
@@ -691,8 +686,8 @@
       <section class="screen" data-screen="3" aria-label="結果・比較">
         <div class="screen-grid results">
           <section class="panel scroll">
-            <div class="panel-header"><h2>合計スコアランキング</h2></div>
-            <label class="check"><input id="show-final-score" type="checkbox">最終スコア</label>
+            <div class="panel-header"><h2>合計スコア</h2></div>
+            <label class="check"><input id="show-final-score" type="checkbox">これまでのスコアを含める</label>
             <div id="ranking"></div>
           </section>
           <section class="panel scroll stack">
@@ -704,12 +699,10 @@
       </section>
     </main>
 
-    <footer class="app-footer">
-      <button id="previous-step" type="button">← 前へ</button>
-      <span id="save-status" class="muted" role="status">作業内容は自動保存されます</span>
-      <button id="next-step" class="primary" type="button">次へ →</button>
-    </footer>
+
   </div>
+
+  <div id="save-status" role="status" hidden></div>
 
   <dialog id="help-dialog" aria-labelledby="help-title">
     <header class="help-header"><h2 id="help-title">使い方</h2><button id="close-help" type="button" aria-label="ヘルプを閉じる" autofocus>×</button></header>
@@ -772,19 +765,19 @@
   </dialog>
 
   <dialog id="route-card-dialog"><div class="panel-header"><h2 id="route-card-title">カード設定</h2><button id="close-route-card" type="button">閉じる</button></div><div id="route-card-content"></div></dialog>
-  <script src="./route-card-model.js"></script>
-  <script src="./route-card-editor.js"></script>
-  <script src="./card-library-preset.js"></script>
-  <script src="./app.js"></script>
-  <script src="./anomaly.js"></script>
-  <script src="./fusion-engine.js"></script>
-  <script src="./integration.js"></script>
-  <script src="./route-tools.js"></script>
-  <script src="./route-drag.js"></script>
-  <script src="./route-help.js"></script>
-  <script src="./route-mobile.js"></script>
-  <script src="./route-sets.js"></script>
-  <script src="./scene-desktop.js"></script>
+  <script src="./route-card-model.js?v=ddb67d4d04a9"></script>
+  <script src="./route-card-editor.js?v=a59f77ef5896"></script>
+  <script src="./card-library-preset.js?v=03bc2638d517"></script>
+  <script src="./app.js?v=20d8aa0ff5a9"></script>
+  <script src="./anomaly.js?v=6e0df6622546"></script>
+  <script src="./fusion-engine.js?v=521ab2c55eb9"></script>
+  <script src="./integration.js?v=2fa826bd7c34"></script>
+  <script src="./route-tools.js?v=6eb9e1149c88"></script>
+  <script src="./route-drag.js?v=ee9458ac9f17"></script>
+  <script src="./route-help.js?v=bf18aec22b98"></script>
+  <script src="./route-mobile.js?v=0612370f885f"></script>
+  <script src="./route-sets.js?v=5207c1c1c02a"></script>
+  <script src="./scene-desktop.js?v=bc49ceda7a25"></script>
 </body>
 </html>
 
