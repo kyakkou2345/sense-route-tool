@@ -130,7 +130,7 @@ function renderDefinition(card,types,changed,editEffects) {
   function changedView(){const next=renderDefinition(card,types,changed,editEffects);box.replaceWith(next);}
   if(view.mode==='custom'){
     const bar=el('div','','definition-custom-bar');
-    bar.append(select('カスタム',card.variants.customs.filter(g=>!g.snapshot).map(g=>[g.id,g.name]),view.custom,v=>{view.custom=v;changedView();}));
+    bar.append(select('カスタム',card.variants.customs.filter(g=>!g.snapshot).map(g=>[g.id,RouteCardModel.displayCustomName(g.name)]),view.custom,v=>{view.custom=v;changedView();}));
     bar.append(button('＋新しいカスタムの追加',()=>{const group={id:crypto.randomUUID(),name:'新規カスタマイズ',patches:[]};card.variants.customs.push(group);view.custom=group.id;changed();}));body.append(bar);
   }
   if(view.mode==='strength'&&view.strength==='base'){
@@ -153,7 +153,7 @@ function renderConfiguration(card, entry, changed, editEffects, types) {
     changed();
   };
   grid.append(select('基本状態', [['base', '無印'], ['plus', '+']], config.base, v => update('base', v)));
-  grid.append(select('カスタマイズ', [['', 'なし'], ...card.variants.customs.map(v => [v.id, v.snapshot ? v.name.replace(/^旧設定：/, '引継ぎ：') : v.name])], config.custom, v => update('custom', v)));
+  grid.append(select('カスタマイズ', [['', 'なし'], ...card.variants.customs.map(v => [v.id, v.snapshot ? v.name.replace(/^旧設定：/, '引継ぎ：') : RouteCardModel.displayCustomName(v.name)])], config.custom, v => update('custom', v)));
   const legacy = card.variants.customs.find(v => v.id === config.custom)?.snapshot;
   grid.append(select('追加強化', [['', 'なし'], ...(!legacy ? card.variants.enhancements.map(v => [v.id, `${v.name}${v.configured ? '' : '（未設定）'}`]) : [])], config.enhancement, v => update('enhancement', v)));
   if (entry.override) for (const input of grid.querySelectorAll('select')) input.disabled = true;

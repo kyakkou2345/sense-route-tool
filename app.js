@@ -1662,15 +1662,17 @@ function addScore(calc, events, base, options = {}) {
     const detail = calculateScore(calc, base, options);
     calc.score += detail.result;
     total += detail.result;
-    events.push(`${options.source ?? 'パラメータ'}: P+${fmt(base, 2)} / 集中効果${fmt(detail.concRate, 2)} → +${fmt(detail.result)}`);
+    const source = options.source ?? 'パラメータ';
+    events.push(`${source} → +${fmt(detail.result)}`);
   }
   return total;
 }
 
 function addConcentration(calc, events, rawValue, source) {
   const boosted = ceilScore(rawValue * (1 + calc.concGainBoost));
+  const before = calc.concentration;
   calc.concentration += boosted;
-  events.push(`${source}: 集中 ${signed(rawValue)} → 補正後 +${fmt(boosted, 2)}`);
+  if (calc.concentration !== before) events.push(`${source} 集中 ${fmt(before, 2)} → ${fmt(calc.concentration, 2)}`);
 }
 
 function resolveEffect(effect, upgraded = false) {
@@ -1708,32 +1710,34 @@ function applyEffect(calc, card, rawEffect, events, upgraded = false, sourceSuff
       break;
     case 'concentration':
       if (value < 0 && !card.legacySnapshot) {
+        const before = calc.concentration;
         calc.concentration = Math.max(0, calc.concentration + value);
-        events.push(`${source}: 集中消費 ${-value} → ${fmt(calc.concentration)}`);
+        if (calc.concentration !== before) events.push(`${source} 集中 ${fmt(before, 2)} → ${fmt(calc.concentration, 2)}`);
       } else addConcentration(calc, events, value, source);
       break;
     case 'good': {
+      const before = calc.good;
       const gained = value > 0 ? ceilScore(value * (1 + (calc.goodGainBoost ?? 0))) : value;
       if (calc.good === 0 && gained > 0) calc.goodFresh = true;
       calc.good = Math.max(0, calc.good + gained);
-      events.push(`${source}: 好調 ${signed(value)}${gained !== value ? ` → 補正後 ${signed(gained)}` : ''} → ${fmt(calc.good, 2)}`);
+      if (calc.good !== before) events.push(`${source} 好調 ${fmt(before, 2)} → ${fmt(calc.good, 2)}`);
       break;
     }
     case 'paramBoost':
       calc.paramBoost += value / 100;
-      events.push(`${source}: パラメータ上昇量増加 ${signed(value, '%')} → ${fmt(calc.paramBoost * 100, 2)}%`);
+      events.push(`${source} パラメータ上昇量増加 ${signed(value, '%')} → ${fmt(calc.paramBoost * 100, 2)}%`);
       break;
     case 'concGainBoost':
       calc.concGainBoost += value / 100;
-      events.push(`${source}: 集中増加量増加 ${signed(value, '%')} → ${fmt(calc.concGainBoost * 100, 2)}%`);
+      events.push(`${source} 集中増加量増加 ${signed(value, '%')} → ${fmt(calc.concGainBoost * 100, 2)}%`);
       break;
     case 'concScoreBoost':
       if (effect.goodThreshold != null && calc.good > number(effect.goodThreshold)) {
-        events.push(`${source}: 好調${effect.goodThreshold}以下の条件を満たさないため集中強化なし`);
+        events.push(`${source} 好調${effect.goodThreshold}以下の条件を満たさないため集中強化なし`);
         break;
       }
       addConcScoreBuff(calc, value / 100, clampInt(effect.duration, 1, 99, 3));
-      events.push(`${source}: 集中強化 ${signed(value, '%')}（表示${effect.duration ?? 3}ターン） → ${concScoreBuffText(calc.concScoreBuffs)}`);
+      if (value !== 0) events.push(`${source} 集中強化 ${signed(value, '%')}（${effect.duration ?? 3}ターン）`);
       break;
     default:
       events.push(`未対応の効果: ${effect.type}`);
@@ -1744,11 +1748,11 @@ function applyNatsuya(calc, events) {
   const setting = state.scenario.natsuya;
   if (!setting.enabled) return;
   calc.natsuyaRemaining -= 1;
-  events.push(`夏夜カウント: 残り${calc.natsuyaRemaining}`);
+  if (calc.natsuyaRemaining > 0) events.push(`夏夜発動まで残り${calc.natsuyaRemaining}回`);
   if (calc.natsuyaRemaining <= 0) {
-    addScore(calc, events, 4, { source: '夏夜追撃', concRate: 1 });
+    addScore(calc, events, 4, { source: '夏夜', concRate: 1 });
     calc.natsuyaRemaining = 5;
-    events.push(`夏夜カウント: ${calc.natsuyaRemaining}に戻る`);
+
   }
 }
 
@@ -1847,7 +1851,7 @@ function simulateRoute(route) {
       if (card.unconfigured) warnings.push(`${card.name}: 追加強化が未設定です。`);
       const beforeScore = calc.score;
       const events = [];
-      card.preEffects.forEach((effect) => applyEffect(calc, card, effect, events, upgraded));
+      card.preEffects.forEach((effect) => applyEffect(calc, { ...card, name: '使用時効果' }, effect, events, upgraded));
       state.externalOrder.filter((id) => id !== 'natsuya').forEach((id) => applyExternalEffect(id, calc, card, events));
       applyExternalEffect('natsuya', calc, card, events);
       card.effects.forEach((effect) => applyEffect(calc, card, effect, events, upgraded));
@@ -1884,7 +1888,7 @@ function simulateRoute(route) {
     const goodBeforeEnd = calc.good;
     if (!calc.goodFresh) calc.good = Math.max(0, calc.good - 1);
     endInitialGainBoostTurn(calc);
-    startEvents.unshift(`開始時の集中強化: ${concScoreBuffText(startState.concScoreBuffs)}`);
+    if (startState.concScoreBuffs.some(buff => buff.value !== 0)) startEvents.unshift(`開始時の集中強化: ${concScoreBuffText(startState.concScoreBuffs)}`);
     turns.push({
       index: turnIndex + 1,
       remaining,
@@ -2081,7 +2085,7 @@ function renderTurnResult(turn) {
     });
     head.append(headRow);
     const tbody = document.createElement('tbody');
-    if (turn.startEvents.length > 0) {
+    if (turn.startScore !== 0 || turn.startEvents.some(event => !event.startsWith('開始時の集中強化:'))) {
       const startRow = document.createElement('tr');
       ['—', 'ターン開始時予約', fmt(turn.startScore), fmt(turn.startState.cumulativeScore), fmt(turn.startState.concentration, 2), fmt(turn.startState.good, 2)]
         .forEach((value) => {
@@ -2137,7 +2141,13 @@ function renderTurnResult(turn) {
   const end = document.createElement('p');
   end.className = 'muted';
   end.style.marginTop = '6px';
-  end.textContent = (turn.endEvents?.length ? turn.endEvents.join(' / ') + ' / ' : '') + `ターン終了: 集中 ${fmt(turn.endState.concentration, 2)} / 好調 ${fmt(turn.endState.goodBeforeEnd, 2)} → ${fmt(turn.endState.good, 2)} / 集中増加量 ${fmt(turn.endState.concGainBoost * 100, 2)}%（残り${turn.endState.concGainBoostRemaining}T） / 好調増加量 ${fmt((turn.endState.goodGainBoost ?? 0) * 100, 2)}%（残り${turn.endState.goodGainBoostRemaining ?? 0}T） / 脚光カウント ${turn.endState.kyakkouCount} / 集中強化（次ターン） ${concScoreBuffText(turn.endState.concScoreBuffs)} / パラメータ上昇量 ${fmt(turn.endState.paramBoost * 100, 2)}%`;
+  const endParts = [...(turn.endEvents ?? [])];
+  endParts.push(`好調 ${fmt(turn.endState.goodBeforeEnd, 2)} → ${fmt(turn.endState.good, 2)}`);
+  if (turn.endState.concGainBoost) endParts.push(`集中増加量 ${fmt(turn.endState.concGainBoost * 100, 2)}%（残り${turn.endState.concGainBoostRemaining}ターン）`);
+  if (turn.endState.goodGainBoost) endParts.push(`好調増加量 ${fmt(turn.endState.goodGainBoost * 100, 2)}%（残り${turn.endState.goodGainBoostRemaining}ターン）`);
+  if (turn.remaining > 1 && turn.endState.concScoreBuffs.some(buff => buff.value !== 0)) endParts.push(`次ターンの集中強化：${concScoreBuffText(turn.endState.concScoreBuffs)}`);
+  endParts.push(`パラメータ上昇量 ${fmt(turn.endState.paramBoost * 100, 2)}%`);
+  end.textContent = endParts.join(' / ');
   body.append(end);
   box.append(summary, body);
   return box;
@@ -2234,7 +2244,7 @@ function bindEvents() {
     renderRoutes();
     queueSave();
   });
-  $('recalculate').addEventListener('click', () => recalculate(true));
+
   $('log-detail').addEventListener('change', () => {
     state.logDetail = $('log-detail').checked;
     renderResultDetail();
@@ -2412,7 +2422,10 @@ function endConcScoreBuffTurn(calc) {
   calc.concScoreBoost = calc.concScoreBuffs.reduce((sum, buff) => sum + buff.value, 0);
 }
 function concScoreBuffText(buffs = []) {
-  return buffs.length ? buffs.map(buff => fmt(buff.value * 100, 2) + '%・残り' + buff.remaining + 'ターン').join(' / ') : 'なし';
+  const totals = new Map();
+  for (const buff of buffs) totals.set(buff.remaining, (totals.get(buff.remaining) ?? 0) + buff.value);
+  const active = [...totals].filter(([, value]) => value !== 0).sort(([a], [b]) => a - b);
+  return active.length ? active.map(([remaining, value]) => fmt(value * 100, 2) + '%（残り' + remaining + 'ターン）').join(' / ') : 'なし';
 }
 
 function renderKyakkouSettings(list) {
@@ -2445,23 +2458,23 @@ function applyKyakkou(calc, card, events) {
   const setting = state.scenario.kyakkou;
   if (!setting.enabled || !['active', 'mental'].includes(card.kind)) return;
   if (calc.good > 20) {
-    events.push('脚光: 好調21以上のためカウント維持 ' + calc.kyakkouCount + '/2');
+
     return;
   }
   calc.kyakkouCount += 1;
-  events.push('脚光カウント: ' + calc.kyakkouCount + '/2');
+
   if (calc.kyakkouCount < 2) return;
   calc.kyakkouCount = 0;
   const level = setting.upgradeLevel ?? (setting.enhanced ? 1 : 0);
   const hits = setting.national ? 2 : 1;
   for (let i = 0; i < hits; i++) {
     addScore(calc, events, [5, 6, 7][level], {
-      source: '脚光' + (hits === 2 ? '（国民 ' + (i + 1) + '/2）' : ''),
+      source: '脚光' + (hits === 2 ? i + 1 : ''),
       concRate: level > 0 ? 4 : 3,
     });
     const before = calc.good;
     calc.good = Math.max(0, calc.good - 3);
-    events.push('脚光: 好調減少3 ' + fmt(before) + ' → ' + fmt(calc.good));
+    if (calc.good !== before) events.push('好調 ' + fmt(before) + ' → ' + fmt(calc.good));
   }
 }
 

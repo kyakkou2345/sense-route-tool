@@ -44,7 +44,7 @@ const RouteTools = (() => {
     base.setAttribute('aria-label', '追加時の基本状態'); custom.setAttribute('aria-label', '追加時のカスタム');
     const value = defaults(card.id);
     [['base','未強化'],['plus','＋']].forEach(([id,name]) => base.append(option(id,name,value.base===id)));
-    [['','なし'],...card.variants.customs.filter(c=>!c.snapshot).map(c=>[c.id,c.name])].forEach(([id,name])=>custom.append(option(id,name,value.custom===id)));
+    [['','なし'],...card.variants.customs.filter(c=>!c.snapshot).map(c=>[c.id,RouteCardModel.displayCustomName(c.name)])].forEach(([id,name])=>custom.append(option(id,name,value.custom===id)));
     box.append(base,custom,button('追加時の既定値を保存','small primary',()=>saveDefaults(card.id,base.value,custom.value)));
     return box;
   }

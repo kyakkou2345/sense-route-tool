@@ -1,5 +1,6 @@
 const RouteCardModel = (() => {
 // Card identity is shared; each route entry owns its selected configuration.
+const displayCustomName = name => String(name).replace(/[（(][0-9０-９]+カスタム[）)]/g, '');
 const blankConfig = () => ({ base: 'plus', custom: '', enhancement: '' });
 const entryId = entry => typeof entry === 'string' ? entry : entry?.cardId;
 const effect = (type, value, extra = {}) => ({ id: crypto.randomUUID(), type, value, count: 1, concRate: 1, ...extra });
@@ -64,7 +65,7 @@ function resolveCard(card, entry = {}) {
     result.kind = config.override.kind ?? result.kind;
   }
   const suffix = card.kind === 'drink' ? '' : enhancement?.name ?? (config.base === 'plus' ? '+' : '');
-  result.name = `${card.name}${suffix}${custom ? `［${custom.name}］` : ''}${config.override ? '［個別編集］' : ''}`;
+  result.name = `${card.name}${suffix}${custom ? `［${displayCustomName(custom.name)}］` : ''}${config.override ? '［個別編集］' : ''}`;
   result.unconfigured = !!enhancement && !enhancement.configured;
   return result;
 }
@@ -180,5 +181,5 @@ function migrateLegacy(cards, route) {
   return { cards: result, route: route.map(entry => mapping.get(entryId(entry))).filter(Boolean) };
 }
 
-return {blankConfig, entryId, ensureVariants, resolveCard, makeCatalog, migrateLegacy};
+return {displayCustomName, blankConfig, entryId, ensureVariants, resolveCard, makeCatalog, migrateLegacy};
 })();
