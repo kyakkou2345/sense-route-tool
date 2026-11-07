@@ -64,35 +64,9 @@
   .definition-bulk-row > button { grid-column: 1 / -1; justify-self: end; font-size: 13px; }
   .fields { grid-template-columns: repeat(2,minmax(0,1fr)); gap: 10px; }
   .fields.compact { grid-template-columns: repeat(3,minmax(0,1fr)); }
-  .screen-grid.scene.pc-scene-enabled { display:flex; flex-direction:column; gap:14px; }
-  .scene.pc-scene-enabled > .pc-scene-original { display:none !important; }
-  .pc-scene-layout { display:flex; flex-direction:column; gap:12px; min-width:0; }
-  .pc-scene-column { display:contents; }
-  .pc-scene-box { min-width:0; border-color:transparent; border-radius:0; background:transparent; box-shadow:none; }
-  .pc-scene-box:not(.pc-scene-basic) { box-shadow:inset 0 2px var(--line); }
-  .pc-scene-box > .panel-header h2 { padding-left:9px; border-left:3px solid var(--accent); }
-  .pc-scene-body { min-width:0; }
-  .pc-scene-basic { order:1; }
-  .pc-scene-concentration { order:2; }
-  .pc-scene-multipliers { order:3; }
-  .pc-scene-kyakkou { order:4; }
-  .pc-scene-external { order:5; }
-  .pc-scene-increases { order:6; }
-  .pc-scene-reservation { order:7; }
-  .pc-scene-concentration .conc-score-inputs { margin:0; padding:0; border:0; }
-  .pc-scene-concentration legend, .pc-scene-hide { display:none !important; }
-  .pc-scene-sr { position:absolute; width:1px; height:1px; overflow:hidden; clip-path:inset(50%); white-space:nowrap; }
-  .pc-kyakkou-choices { grid-column:1/-1; display:flex; flex-wrap:wrap; gap:16px; margin:0; padding:0; border:0; }
-  .pc-external-extras { display:grid; gap:10px; margin-top:12px; padding-top:12px; border-top:1px dashed var(--line); }
-  .pc-external-extras > label { display:flex; align-items:center; gap:6px; }
   #external-order > .effect-order-item { grid-template-columns: 20px minmax(0,1fr) 36px 36px; gap: 4px; }
   #external-order > .effect-order-item > .effect-settings:empty { display: none; }
-  .scene-passive-row { display:flex; flex-wrap:wrap; align-items:center; gap:8px 16px; }
-  .scene-passive-row > label { display:flex; align-items:center; gap:6px; }
 
-  .pc-external-extras .effect-order-item { display:flex; align-items:center; justify-content:flex-start; gap:12px; padding:0; border:0; background:transparent; }
-  .pc-external-extras .effect-settings label { display:flex; align-items:center; gap:6px; }
-  .pc-external-extras .effect-settings input[type="number"] { width:64px; }
   .scene-preset-bar { grid-template-columns: repeat(2,minmax(0,1fr)); }
   .scene-preset-bar strong, .scene-preset-bar select { grid-column: 1 / -1; }
   .buff-inputs { gap: 10px; }

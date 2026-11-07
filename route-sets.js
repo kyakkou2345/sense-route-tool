@@ -160,6 +160,17 @@
     if (!s || !bar.offsetParent) { dirty.hidden = true; return; }
     dirty.hidden = !hasChanges(s);
   }
+  // Refresh after edits finish, using the existing saved-content comparison.
+  let dirtyRefreshPending = false;
+  const baseQueueSaveForDirty = queueSave;
+  queueSave = function () {
+    const result = baseQueueSaveForDirty.apply(this, arguments);
+    if (!dirtyRefreshPending) {
+      dirtyRefreshPending = true;
+      queueMicrotask(() => { dirtyRefreshPending = false; updateDirty(); });
+    }
+    return result;
+  };
   setInterval(() => { if (!document.hidden) updateDirty(); }, 1000);
 
   let toastTimer = null;
